@@ -3,7 +3,10 @@
 
 extern crate gfx;
 
-use gfx::batch::RefBatch;
+use gfx::batch::{
+    BatchError,
+    RefBatch,
+};
 
 use gfx::{
     BufferUsage,
@@ -18,7 +21,9 @@ use gfx::{
     PrimitiveType,
     ProgramError,
     ProgramHandle,
+    BufferHandle,
     ToSlice,
+    VertexCount,
 };
 
 static MAT4_ID: [[f32; 4]; 4] =
@@ -56,6 +61,7 @@ static FRAGMENT_SRC: &'static [u8] = b"
 
 #[vertex_format]
 #[derive(Copy)]
+#[derive(Clone)]
 #[derive(Debug)]
 struct Vertex {
     position: [f32; 3],
@@ -72,47 +78,47 @@ pub struct DebugRenderer {
     state: DrawState,
     line_vertex_data: Vec<Vertex>,
     line_index_data: Vec<u32>,
-    batch: Option<RefBatch<Params>>,
+    vertex_buffer: BufferHandle<GlResources, Vertex>,
+    vertex_buffer_size: usize,
     params: Params,
 }
 
 impl DebugRenderer {
 
-    pub fn new(device: &mut GlDevice) -> Result<DebugRenderer, ProgramError> {
+    pub fn new(graphics: &mut Graphics<GlDevice>, initial_buffer_size: usize) -> Result<DebugRenderer, ProgramError> {
 
-        let program = match device.link_program(VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
+        let program = match graphics.device.link_program(VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
             Ok(program_handle) => program_handle,
             Err(e) => return Err(e),
         };
+
+        let vertex_buffer = graphics.device.create_buffer::<Vertex>(initial_buffer_size, BufferUsage::Dynamic);
 
         Ok(DebugRenderer {
             line_vertex_data: Vec::new(),
             line_index_data: Vec::new(),
             program: program,
             state: DrawState::new(),
-            batch: None,
+            vertex_buffer: vertex_buffer,
+            vertex_buffer_size: initial_buffer_size,
             params: Params { u_model_view_proj: MAT4_ID },
         })
     }
 
-    pub fn add_line(&mut self, start: [f32; 3], end: [f32; 3], color: [f32; 4]) {
+    ///
+    /// Add a line to the batch to be drawn on 'render'
+    ///
+    pub fn draw_line(&mut self, start: [f32; 3], end: [f32; 3], color: [f32; 4]) {
         let index = self.line_vertex_data.len() as u32;
-
         self.line_vertex_data.push(Vertex{position: start, color: color});
         self.line_vertex_data.push(Vertex{position: end, color: color});
-
         self.line_index_data.push(index);
         self.line_index_data.push(index + 1);
-
-        // Invalidate batch
-        self.batch = None;
     }
 
-    pub fn clear(&mut self) {
-        self.line_vertex_data.clear();
-        self.line_index_data.clear();
-    }
-
+    ///
+    /// Draw and clear the current batch of lines
+    ///
     pub fn render(
         &mut self,
         graphics: &mut Graphics<GlDevice>,
@@ -121,33 +127,49 @@ impl DebugRenderer {
     ) {
         self.params.u_model_view_proj = projection;
 
-        if self.batch == None {
-            self.make_batch(graphics);
+        self.grow_vertex_buffer(graphics);
+        graphics.device.update_buffer(self.vertex_buffer.clone(), &self.line_vertex_data[..], 0);
+
+        match self.make_batch(graphics) {
+            Ok(batch) =>  {
+                graphics.draw(&batch, &self.params, frame);
+            },
+            Err(e) => {
+                println!("Error creating debug render batch: {:?}", e);
+            },
         }
 
-        if let Some(ref batch) = self.batch {
-            match graphics.draw(&batch, &self.params, frame) {
-                Err(_) => println!("Error on draw."),
-                _ => (),
+        self.line_vertex_data.clear();
+        self.line_index_data.clear();
+    }
+
+    ///
+    /// Grow the vertex buffer if necessary
+    ///
+    fn grow_vertex_buffer(&mut self, graphics: &mut Graphics<GlDevice>) {
+
+        let required_size = self.line_vertex_data.len();
+
+        if required_size > self.vertex_buffer_size {
+            graphics.device.delete_buffer(self.vertex_buffer);
+
+            while self.vertex_buffer_size < required_size {
+                self.vertex_buffer_size *= 2;
             }
+
+            self.vertex_buffer = graphics.device.create_buffer::<Vertex>(self.vertex_buffer_size, BufferUsage::Dynamic);
         }
     }
 
-    fn make_batch(&mut self, graphics: &mut Graphics<GlDevice>) {
-
-        let vertex_buffer_size = self.line_vertex_data.len();
-        let vertex_buffer = graphics.device.create_buffer::<Vertex>(vertex_buffer_size, BufferUsage::Dynamic);
-        graphics.device.update_buffer(vertex_buffer, &self.line_vertex_data[..], 0);
-
-        let mesh = Mesh::from_format(vertex_buffer, vertex_buffer_size as u32);
-
-        // TODO VertexSlice(PrimitiveType::Line, 0, vertex_count - 1)
-        let slice = graphics.device
-            .create_buffer_static::<u32>(&self.line_index_data[..])
-            .to_slice(PrimitiveType::Line);
-
-        let batch = graphics.make_batch(&self.program, &mesh, slice, &self.state).unwrap();
-
-        self.batch = Some(batch);
+    ///
+    /// Construct a new ref batch for the current number of vertices
+    ///
+    fn make_batch(&mut self, graphics: &mut Graphics<GlDevice>) -> Result<RefBatch<Params>, BatchError> {
+        let mesh = Mesh::from_format(
+            self.vertex_buffer.clone(),
+            self.line_vertex_data.len() as VertexCount
+        );
+        let slice = mesh.to_slice(PrimitiveType::Line);
+        graphics.make_batch(&self.program, &mesh, slice, &self.state)
     }
 }
