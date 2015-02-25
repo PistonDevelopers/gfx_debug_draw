@@ -14,7 +14,6 @@ use gfx::{
     ProgramError,
     ProgramHandle,
     BufferHandle,
-    ToSlice,
     Slice,
     SliceKind,
     VertexCount,
@@ -32,9 +31,7 @@ use gfx::shade::TextureParam;
 
 use gfx_texture::{ Texture };
 
-use bitmap_font::{BitmapFont, BitmapCharacter};
-
-use vecmath::col_mat4_transform;
+use bitmap_font::BitmapFont;
 
 pub struct TextRenderer {
     program: ProgramHandle<GlResources>,
@@ -49,12 +46,15 @@ pub struct TextRenderer {
     params: TextShaderParams,
 }
 
-// TODO Allow optional font override?
-
 impl TextRenderer {
 
-
-    pub fn new(graphics: &mut Graphics<GlDevice>, initial_buffer_size: usize) -> Result<TextRenderer, ProgramError> {
+    pub fn new(
+        graphics: &mut Graphics<GlDevice>,
+        frame_size: [u32; 2],
+        initial_buffer_size: usize,
+        font_xml_path: &Path,
+        font_texture_path: &Path,
+    ) -> Result<TextRenderer, ProgramError> {
 
         let program = match graphics.device.link_program(VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
             Ok(program_handle) => program_handle,
@@ -65,8 +65,8 @@ impl TextRenderer {
 
         let index_buffer = graphics.device.create_buffer::<u32>(1024, BufferUsage::Dynamic);
 
-        let font_texture = Texture::from_path(&mut graphics.device, &Path::new("assets/font.png")).unwrap();
-        let bitmap_font = BitmapFont::from_path(&Path::new("assets/font.fnt")).unwrap();
+        let font_texture = Texture::from_path(&mut graphics.device, font_texture_path).unwrap();
+        let bitmap_font = BitmapFont::from_path(font_xml_path).unwrap();
 
         let sampler = graphics.device.create_sampler(
            SamplerInfo::new(
@@ -89,10 +89,17 @@ impl TextRenderer {
             index_buffer_size: 1024,
             params: TextShaderParams {
                 u_model_view_proj: MAT4_ID,
-                u_screen_size: [640.0, 480.0], // FIXME - grab from somewhere
+                u_screen_size: [frame_size[0] as f32, frame_size[1] as f32],
                 u_tex_font: (font_texture.handle, Some(sampler)),
             },
         })
+    }
+
+    ///
+    /// Respond to a change in window size
+    ///
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.params.u_screen_size = [width as f32, height as f32];
     }
 
     pub fn draw_text_at_position(
@@ -121,7 +128,7 @@ impl TextRenderer {
         screen_relative: i32,
         color: [f32; 4],
     ) {
-        let [mut x, mut y] = screen_position;
+        let [mut x, y] = screen_position;
 
         let scale_w = self.bitmap_font.scale_w as f32;
         let scale_h = self.bitmap_font.scale_h as f32;
@@ -310,6 +317,7 @@ static VERTEX_SRC: &'static [u8] = b"
 
         vec4 screen_position = u_model_view_proj * world_position;
 
+        // perspective divide to get normalized device coords
         vec2 world_offset = vec2(
             screen_position.x / screen_position.z + 1,
             screen_position.y / screen_position.z - 1

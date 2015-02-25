@@ -1,5 +1,4 @@
-#![feature(plugin)]
-#![plugin(gfx_macros)]
+#![feature(old_path)]
 
 extern crate piston;
 extern crate shader_version;
@@ -14,30 +13,21 @@ extern crate "gfx-debug-draw" as gfx_debug_draw;
 
 use gfx_debug_draw::{DebugRenderer};
 
-#[macro_use]
-extern crate gfx_macros;
-
 use std::old_path::posix::Path;
 
 use gl::Gl;
-use gl::types::*;
 
 use std::cell::RefCell;
 use piston::window::WindowSettings;
 use piston::event::{
     events,
     RenderEvent,
+    ResizeEvent,
 };
 
-use std::default::Default;
 use vecmath::mat4_id;
 
-use gfx::{ Device, DeviceExt, ToSlice };
-
 use sdl2_window::Sdl2Window;
-
-use std::old_io as io;
-use std::old_io::{File, BufferedReader};
 
 use cam::{
     OrbitZoomCamera,
@@ -52,7 +42,7 @@ fn main() {
 
     let (win_width, win_height) = (640, 480);
 
-    let mut window = Sdl2Window::new(
+    let window = Sdl2Window::new(
         shader_version::OpenGL::_3_2,
         WindowSettings {
             title: "Debug Render Test".to_string(),
@@ -63,11 +53,11 @@ fn main() {
         }
     );
 
-    let mut device = gfx::GlDevice::new(|s| unsafe {
+    let device = gfx::GlDevice::new(|s| unsafe {
         std::mem::transmute(sdl2::video::gl_get_proc_address(s))
     });
 
-    let frame = gfx::Frame::new(win_width as u16, win_height as u16);
+    let mut frame = gfx::Frame::new(win_width as u16, win_height as u16);
 
     let window = RefCell::new(window);
 
@@ -79,10 +69,16 @@ fn main() {
 
     let mut graphics = gfx::Graphics::new(device);
 
-    let mut debug_renderer = DebugRenderer::new(&mut graphics, 1).unwrap();
+    let mut debug_renderer = DebugRenderer::new(
+        &mut graphics,
+        [frame.width as u32, frame.height as u32],
+        1,
+        &Path::new("assets/font.fnt"),
+        &Path::new("assets/font.png"),
+    ).unwrap();
 
     let model = mat4_id();
-    let projection = CameraPerspective {
+    let mut projection = CameraPerspective {
         fov: 90.0f32,
         near_clip: 0.1,
         far_clip: 1000.0,
@@ -96,11 +92,27 @@ fn main() {
 
     // Start event loop
 
-    let gl = Gl::load_with(|s| unsafe {
+    Gl::load_with(|s| unsafe {
         std::mem::transmute(sdl2::video::gl_get_proc_address(s))
     });
 
     for e in events(&window) {
+
+        e.resize(|width, height| {
+            debug_renderer.resize(width, height);
+
+            // Update frame
+            frame.width = width as u16;
+            frame.height = height as u16;
+
+            // Update projection matrix
+            projection = CameraPerspective {
+                fov: 90.0f32,
+                near_clip: 0.1,
+                far_clip: 1000.0,
+                aspect_ratio: (width as f32) / (height as f32)
+            }.projection();
+        });
 
         orbit_zoom_camera.event(&e);
 

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::default::Default;
 use std::old_io::{File};
 
 use xml::Element;
@@ -24,6 +23,9 @@ pub struct BitmapCharacter {
 
 impl BitmapFont {
 
+    ///
+    /// Construct a BitmapFont for the xml configuration file at the given path
+    ///
     pub fn from_path(path: &Path) -> Result<BitmapFont, &'static str> {
         let xml_root = try!(parse_file(path));
 

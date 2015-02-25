@@ -32,11 +32,14 @@ impl DebugRenderer {
 
     pub fn new(
         graphics: &mut Graphics<GlDevice>,
-        initial_buffer_size: usize
+        frame_size: [u32; 2],
+        initial_buffer_size: usize,
+        font_xml_path: &Path,
+        font_texture_path: &Path,
     ) -> Result<DebugRenderer, ProgramError> {
 
         let line_renderer = try!(LineRenderer::new(graphics, initial_buffer_size));
-        let text_renderer = try!(TextRenderer::new(graphics, initial_buffer_size));
+        let text_renderer = try!(TextRenderer::new(graphics, frame_size, initial_buffer_size, font_xml_path, font_texture_path));
 
         Ok(DebugRenderer {
             line_renderer: line_renderer,
@@ -74,5 +77,9 @@ impl DebugRenderer {
     ) {
         self.line_renderer.render(graphics, frame, projection);
         self.text_renderer.render(graphics, frame, projection);
+    }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.text_renderer.resize(width, height);
     }
 }
