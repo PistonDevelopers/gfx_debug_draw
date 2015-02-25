@@ -1,6 +1,6 @@
 [package]
 
-name = "gfx-debug-draw"
+name = "gfx_debug_draw"
 version = "0.0.1"
 authors = ["Steve Jahns <s.t.jahns@gmail.com>"]
 

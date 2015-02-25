@@ -9,7 +9,7 @@ extern crate cam;
 extern crate vecmath;
 extern crate env_logger;
 extern crate "gfx_gl" as gl;
-extern crate "gfx-debug-draw" as gfx_debug_draw;
+extern crate gfx_debug_draw;
 
 use gfx_debug_draw::{DebugRenderer};
 
