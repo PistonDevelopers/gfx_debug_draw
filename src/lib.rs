@@ -6,6 +6,7 @@
 extern crate gfx;
 extern crate gfx_texture;
 extern crate xml;
+extern crate vecmath;
 
 mod line_renderer;
 mod text_renderer;
@@ -54,6 +55,15 @@ impl DebugRenderer {
         color: [f32; 4],
     ) {
         self.text_renderer.draw_text_on_screen(text, screen_position, color);
+    }
+
+    pub fn draw_text_at_position(
+        &mut self,
+        text: &str,
+        world_position: [f32; 3],
+        color: [f32; 4],
+    ) {
+        self.text_renderer.draw_text_at_position(text, world_position, color);
     }
 
     pub fn render(

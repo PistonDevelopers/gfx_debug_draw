@@ -97,20 +97,3 @@ fn get_attribute(element: &Element, name: &str) -> u8 {
         None => 0
     }
 }
-
-#[test]
-fn test_load_font() {
-    match BitmapFont::from_path(&Path::new("assets/font.fnt")) {
-        Ok(font) => {
-            //println!("{:?}", font.characters);
-            assert_eq!(font.characters.len(), 81);
-            match font.characters.get(&(107 as char)) {
-                Some(c) => assert_eq!(c.x, 108),
-                None => assert!(false),
-            }
-        }
-        Err(_) => {
-            assert!(false);
-        }
-    }
-}

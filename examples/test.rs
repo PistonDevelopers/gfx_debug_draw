@@ -107,17 +107,35 @@ fn main() {
         if let Some(args) = e.render_args() {
             graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &frame);
 
-            // Draw axes
-            debug_renderer.draw_line([0.0, 0.0, 0.0], [10.0, 0.0, 0.0], [1.0, 0.0, 0.0, 1.0]);
-            debug_renderer.draw_line([0.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 1.0, 0.0, 1.0]);
-            debug_renderer.draw_line([0.0, 0.0, 0.0], [0.0, 0.0, 10.0], [0.0, 0.0, 1.0, 1.0]);
-
-            debug_renderer.draw_text_on_screen("Hello world!", [10, 10], [1.0, 0.4, 0.4, 0.7]);
-
             let camera_projection = model_view_projection(
                 model,
                 orbit_zoom_camera.camera(args.ext_dt).orthogonal(),
                 projection
+            );
+
+            // Draw axes
+            debug_renderer.draw_line([0.0, 0.0, 0.0], [5.0, 0.0, 0.0], [1.0, 0.0, 0.0, 1.0]);
+            debug_renderer.draw_line([0.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 1.0, 0.0, 1.0]);
+            debug_renderer.draw_line([0.0, 0.0, 0.0], [0.0, 0.0, 5.0], [0.0, 0.0, 1.0, 1.0]);
+
+            debug_renderer.draw_text_on_screen(&format!("FPS: {}", 1.0 / args.ext_dt)[..], [10, 10], [1.0, 0.4, 0.4, 0.7]);
+
+            debug_renderer.draw_text_at_position(
+                "X",
+                [6.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 1.0],
+            );
+
+            debug_renderer.draw_text_at_position(
+                "Y",
+                [0.0, 6.0, 0.0],
+                [0.0, 1.0, 0.0, 1.0],
+            );
+
+            debug_renderer.draw_text_at_position(
+                "Z",
+                [0.0, 0.0, 6.0],
+                [0.0, 0.0, 1.0, 1.0],
             );
 
             debug_renderer.render(&mut graphics, &frame, camera_projection);

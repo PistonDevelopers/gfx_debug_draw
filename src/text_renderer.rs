@@ -34,6 +34,8 @@ use gfx_texture::{ Texture };
 
 use bitmap_font::{BitmapFont, BitmapCharacter};
 
+use vecmath::col_mat4_transform;
+
 pub struct TextRenderer {
     program: ProgramHandle<GlResources>,
     state: DrawState,
@@ -87,16 +89,36 @@ impl TextRenderer {
             index_buffer_size: 1024,
             params: TextShaderParams {
                 u_model_view_proj: MAT4_ID,
-                u_screen_size: [640.0, 480.0],
+                u_screen_size: [640.0, 480.0], // FIXME - grab from somewhere
                 u_tex_font: (font_texture.handle, Some(sampler)),
             },
         })
+    }
+
+    pub fn draw_text_at_position(
+        &mut self,
+        text: &str,
+        world_position: [f32; 3],
+        color: [f32; 4],
+    ) {
+        self.draw_text(text, [0, 0], world_position, 0, color);
     }
 
     pub fn draw_text_on_screen(
         &mut self,
         text: &str,
         screen_position: [i32; 2],
+        color: [f32; 4],
+    ) {
+        self.draw_text(text, screen_position, [0.0, 0.0, 0.0], 1, color);
+    }
+
+    fn draw_text(
+        &mut self,
+        text: &str,
+        screen_position: [i32; 2],
+        world_position: [f32; 3],
+        screen_relative: i32,
         color: [f32; 4],
     ) {
         let [mut x, mut y] = screen_position;
@@ -122,7 +144,7 @@ impl TextRenderer {
 
 
             // 0 - top left
-            self.vertex_data.push(Vertex{
+            self.vertex_data.push(Vertex {
                 position: [
                     x_offset,
                     y_offset,
@@ -132,6 +154,8 @@ impl TextRenderer {
                     bc.x as f32 / scale_w,
                     bc.y as f32 / scale_h,
                 ],
+                world_position: world_position,
+                screen_relative: screen_relative,
             });
 
             // 1 - bottom left
@@ -145,6 +169,8 @@ impl TextRenderer {
                     bc.x as f32 / scale_w,
                     (bc.y + bc.height) as f32 / scale_h,
                 ],
+                world_position: world_position,
+                screen_relative: screen_relative,
             });
 
             // 2 - bottom right
@@ -158,6 +184,8 @@ impl TextRenderer {
                     (bc.x + bc.width) as f32 / scale_w,
                     (bc.y + bc.height) as f32 / scale_h,
                 ],
+                world_position: world_position,
+                screen_relative: screen_relative,
             });
 
 
@@ -172,6 +200,8 @@ impl TextRenderer {
                     (bc.x + bc.width) as f32 / scale_w,
                     bc.y as f32 / scale_h,
                 ],
+                world_position: world_position,
+                screen_relative: screen_relative,
             });
 
 
@@ -198,8 +228,6 @@ impl TextRenderer {
         frame: &Frame<GlResources>,
         projection: [[f32; 4]; 4],
     ) {
-        // self.draw_test_quad();
-
         self.params.u_model_view_proj = projection;
 
         self.grow_vertex_buffer(graphics);
@@ -262,19 +290,39 @@ static VERTEX_SRC: &'static [u8] = b"
     #version 150 core
 
     uniform vec2 u_screen_size;
+    uniform mat4 u_model_view_proj;
 
     in vec2 position;
+    in vec4 world_position;
+    in int screen_relative;
     in vec4 color;
     in vec2 texcoords;
     out vec4 v_color;
     out vec2 v_TexCoord;
 
     void main() {
-        float x = 2 * position.x / u_screen_size.x - 1;
-        float y = 1 - 2 * position.y / u_screen_size.y;
-        gl_Position = vec4(x, y, 0.5, 1.0);
+
+        // on-screen offset from text origin
+        vec2 screen_offset = vec2(
+            2 * position.x / u_screen_size.x - 1,
+            1 - 2 * position.y / u_screen_size.y
+        );
+
+        vec4 screen_position = u_model_view_proj * world_position;
+
+        vec2 world_offset = vec2(
+            screen_position.x / screen_position.z + 1,
+            screen_position.y / screen_position.z - 1
+        );
+
+        // on-screen offset accounting for world_position
+        world_offset = screen_relative == 0 ? world_offset : vec2(0.0, 0.0);
+
+        gl_Position = vec4(world_offset + screen_offset, 0, 1.0);
+
         v_TexCoord = texcoords;
         v_color = color;
+
     }
 ";
 
@@ -298,8 +346,10 @@ static FRAGMENT_SRC: &'static [u8] = b"
 #[derive(Clone)]
 #[derive(Debug)]
 struct Vertex {
-    position: [f32; 2], // in Pixels relative to top-left of screen
+    position: [f32; 2],
     texcoords: [f32; 2],
+    world_position: [f32; 3],
+    screen_relative: i32,
     color: [f32; 4],
 }
 
