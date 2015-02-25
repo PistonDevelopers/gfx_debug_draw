@@ -16,14 +16,14 @@ git = "https://github.com/pistondevelopers/gfx_texture.git"
 [dependencies.RustyXML]
 git = "https://github.com/Florob/RustyXML.git"
 
-[dependencies.vecmath]
-git = "https://github.com/PistonDevelopers/vecmath"
-
 ###### For example ###########################
 
 [dev-dependencies]
 gfx_gl = "*"
 env_logger = "*"
+
+[dev-dependencies.vecmath]
+git = "https://github.com/PistonDevelopers/vecmath"
 
 [dev-dependencies.piston]
 git = "https://github.com/PistonDevelopers/piston"

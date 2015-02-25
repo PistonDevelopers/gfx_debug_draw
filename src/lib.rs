@@ -6,11 +6,11 @@
 extern crate gfx;
 extern crate gfx_texture;
 extern crate xml;
-extern crate vecmath;
 
 mod line_renderer;
 mod text_renderer;
 mod bitmap_font;
+mod utils;
 
 use line_renderer::LineRenderer;
 use text_renderer::TextRenderer;

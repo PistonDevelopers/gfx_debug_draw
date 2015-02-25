@@ -21,12 +21,13 @@ use gfx::{
     VertexCount,
 };
 
+use utils::{grow_buffer, MAT4_ID};
+
 pub struct LineRenderer {
     program: ProgramHandle<GlResources>,
     state: DrawState,
     vertex_data: Vec<Vertex>,
     vertex_buffer: BufferHandle<GlResources, Vertex>,
-    vertex_buffer_size: usize,
     params: Params,
 }
 
@@ -46,7 +47,6 @@ impl LineRenderer {
             program: program,
             state: DrawState::new(),
             vertex_buffer: vertex_buffer,
-            vertex_buffer_size: initial_buffer_size,
             params: Params { u_model_view_proj: MAT4_ID },
         })
     }
@@ -71,7 +71,10 @@ impl LineRenderer {
     ) {
         self.params.u_model_view_proj = projection;
 
-        self.grow_vertex_buffer(graphics);
+        if self.vertex_data.len() > self.vertex_buffer.len() {
+            self.vertex_buffer = grow_buffer(graphics, self.vertex_buffer, self.vertex_data.len());
+        }
+
         graphics.device.update_buffer(self.vertex_buffer.clone(), &self.vertex_data[..], 0);
 
         match self.make_batch(graphics) {
@@ -87,27 +90,12 @@ impl LineRenderer {
     }
 
     ///
-    /// Grow the vertex buffer if necessary
-    ///
-    fn grow_vertex_buffer(&mut self, graphics: &mut Graphics<GlDevice>) {
-
-        let required_size = self.vertex_data.len();
-
-        if required_size > self.vertex_buffer_size {
-            graphics.device.delete_buffer(self.vertex_buffer);
-
-            while self.vertex_buffer_size < required_size {
-                self.vertex_buffer_size *= 2;
-            }
-
-            self.vertex_buffer = graphics.device.create_buffer::<Vertex>(self.vertex_buffer_size, BufferUsage::Dynamic);
-        }
-    }
-
-    ///
     /// Construct a new ref batch for the current number of vertices
     ///
-    fn make_batch(&mut self, graphics: &mut Graphics<GlDevice>) -> Result<RefBatch<Params>, BatchError> {
+    fn make_batch(
+        &mut self,
+        graphics: &mut Graphics<GlDevice>
+    ) -> Result<RefBatch<Params>, BatchError> {
         let mesh = Mesh::from_format(
             self.vertex_buffer.clone(),
             self.vertex_data.len() as VertexCount
@@ -155,11 +143,3 @@ struct Vertex {
 struct Params {
     u_model_view_proj: [[f32; 4]; 4],
 }
-
-static MAT4_ID: [[f32; 4]; 4] =
-[
-    [1.0, 0.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0],
-    [0.0, 0.0, 1.0, 0.0],
-    [0.0, 0.0, 0.0, 1.0],
-];

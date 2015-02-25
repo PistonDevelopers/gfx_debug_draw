@@ -32,6 +32,7 @@ use gfx::shade::TextureParam;
 use gfx_texture::{ Texture };
 
 use bitmap_font::BitmapFont;
+use utils::{grow_buffer, MAT4_ID};
 
 pub struct TextRenderer {
     program: ProgramHandle<GlResources>,
@@ -40,9 +41,7 @@ pub struct TextRenderer {
     vertex_data: Vec<Vertex>,
     index_data: Vec<u32>,
     vertex_buffer: BufferHandle<GlResources, Vertex>,
-    vertex_buffer_size: usize,
     index_buffer: BufferHandle<GlResources, u32>,
-    index_buffer_size: usize,
     params: TextShaderParams,
 }
 
@@ -63,7 +62,7 @@ impl TextRenderer {
 
         let vertex_buffer = graphics.device.create_buffer::<Vertex>(initial_buffer_size, BufferUsage::Dynamic);
 
-        let index_buffer = graphics.device.create_buffer::<u32>(1024, BufferUsage::Dynamic);
+        let index_buffer = graphics.device.create_buffer::<u32>(initial_buffer_size, BufferUsage::Dynamic);
 
         let font_texture = Texture::from_path(&mut graphics.device, font_texture_path).unwrap();
         let bitmap_font = BitmapFont::from_path(font_xml_path).unwrap();
@@ -84,9 +83,7 @@ impl TextRenderer {
             program: program,
             state: state,
             vertex_buffer: vertex_buffer,
-            vertex_buffer_size: initial_buffer_size,
             index_buffer: index_buffer,
-            index_buffer_size: 1024,
             params: TextShaderParams {
                 u_model_view_proj: MAT4_ID,
                 u_screen_size: [frame_size[0] as f32, frame_size[1] as f32],
@@ -237,7 +234,13 @@ impl TextRenderer {
     ) {
         self.params.u_model_view_proj = projection;
 
-        self.grow_vertex_buffer(graphics);
+        if self.vertex_data.len() > self.vertex_buffer.len() {
+            self.vertex_buffer = grow_buffer(graphics, self.vertex_buffer, self.vertex_data.len());
+        }
+
+        if self.index_data.len() > self.index_buffer.len() {
+            self.index_buffer = grow_buffer(graphics, self.index_buffer, self.index_data.len());
+        }
 
         graphics.device.update_buffer(self.vertex_buffer.clone(), &self.vertex_data[..], 0);
         graphics.device.update_buffer(self.index_buffer.clone(), &self.index_data[..], 0);
@@ -253,24 +256,6 @@ impl TextRenderer {
 
         self.vertex_data.clear();
         self.index_data.clear();
-    }
-
-    ///
-    /// Grow the vertex buffer if necessary
-    ///
-    fn grow_vertex_buffer(&mut self, graphics: &mut Graphics<GlDevice>) {
-
-        let required_size = self.vertex_data.len();
-
-        if required_size > self.vertex_buffer_size {
-            graphics.device.delete_buffer(self.vertex_buffer);
-
-            while self.vertex_buffer_size < required_size {
-                self.vertex_buffer_size *= 2;
-            }
-
-            self.vertex_buffer = graphics.device.create_buffer::<Vertex>(self.vertex_buffer_size, BufferUsage::Dynamic);
-        }
     }
 
     ///
@@ -367,11 +352,3 @@ struct TextShaderParams {
     u_screen_size: [f32; 2],
     u_tex_font: TextureParam<GlResources>,
 }
-
-static MAT4_ID: [[f32; 4]; 4] =
-[
-    [1.0, 0.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0],
-    [0.0, 0.0, 1.0, 0.0],
-    [0.0, 0.0, 0.0, 1.0],
-];
