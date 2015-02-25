@@ -9,3 +9,44 @@ git = "https://github.com/gfx-rs/gfx-rs"
 
 [dependencies.gfx_macros]
 git = "https://github.com/gfx-rs/gfx-rs"
+
+[dependencies.piston-gfx_texture]
+git = "https://github.com/pistondevelopers/gfx_texture.git"
+
+[dependencies.RustyXML]
+git = "https://github.com/Florob/RustyXML.git"
+
+###### For example ###########################
+
+[dev-dependencies]
+gfx_gl = "*"
+env_logger = "*"
+
+[dev-dependencies.piston]
+git = "https://github.com/PistonDevelopers/piston"
+
+[dev-dependencies.shader_version]
+git = "https://github.com/PistonDevelopers/shader_version"
+
+[dev-dependencies.gfx]
+git = "https://github.com/gfx-rs/gfx-rs"
+
+[dev-dependencies.gfx_macros]
+git = "https://github.com/gfx-rs/gfx-rs"
+
+[dev-dependencies.piston3d-cam]
+git = "https://github.com/pistondevelopers/cam"
+
+[dev-dependencies.vecmath]
+git = "https://github.com/PistonDevelopers/vecmath"
+
+[dev-dependencies.piston2d-opengl_graphics]
+git = "https://github.com/PistonDevelopers/opengl_graphics"
+
+[dev-dependencies.sdl2]
+git = "https://github.com/AngryLawyer/rust-sdl2"
+
+[dev-dependencies.pistoncore-sdl2_window]
+git = "https://github.com/PistonDevelopers/sdl2_window"
+
+###############################################
