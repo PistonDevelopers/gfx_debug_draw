@@ -10,10 +10,9 @@ extern crate vecmath;
 extern crate env_logger;
 extern crate "gfx_gl" as gl;
 extern crate gfx_debug_draw;
+extern crate gfx_device_gl;
 
 use gfx_debug_draw::{DebugRenderer};
-
-use std::old_path::posix::Path;
 
 use gl::Gl;
 
@@ -53,7 +52,7 @@ fn main() {
         }
     );
 
-    let device = gfx::GlDevice::new(|s| unsafe {
+    let device = gfx_device_gl::GlDevice::new(|s| unsafe {
         std::mem::transmute(sdl2::video::gl_get_proc_address(s))
     });
 

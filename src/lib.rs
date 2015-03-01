@@ -4,6 +4,7 @@
 #![plugin(gfx_macros)]
 
 extern crate gfx;
+extern crate gfx_device_gl;
 extern crate gfx_texture;
 extern crate xml;
 
@@ -17,10 +18,13 @@ use text_renderer::TextRenderer;
 
 use gfx::{
     Frame,
-    GlDevice,
-    GlResources,
     Graphics,
     ProgramError,
+};
+
+use gfx_device_gl::{
+    GlDevice,
+    GlResources,
 };
 
 pub struct DebugRenderer {

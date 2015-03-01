@@ -1,10 +1,13 @@
 use gfx::{
+    BufferHandle,
     BufferUsage,
     Device,
+    Graphics,
+};
+
+use gfx_device_gl::{
     GlDevice,
     GlResources,
-    Graphics,
-    BufferHandle,
 };
 
 pub fn grow_buffer<T>(

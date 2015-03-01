@@ -1,23 +1,22 @@
 use std::default::Default;
 
 use gfx::{
+    BlendPreset,
+    BufferHandle,
     BufferUsage,
     Device,
     DeviceExt,
     DrawState,
     Frame,
-    GlDevice,
-    GlResources,
     Graphics,
     Mesh,
     PrimitiveType,
     ProgramError,
     ProgramHandle,
-    BufferHandle,
+    Resources,
     Slice,
     SliceKind,
     VertexCount,
-    BlendPreset,
 };
 
 use gfx::tex::{SamplerInfo, FilterMethod, WrapMode};
@@ -28,6 +27,11 @@ use gfx::batch::{
 };
 
 use gfx::shade::TextureParam;
+
+use gfx_device_gl::{
+    GlDevice,
+    GlResources,
+};
 
 use gfx_texture::{ Texture };
 
@@ -42,7 +46,7 @@ pub struct TextRenderer {
     index_data: Vec<u32>,
     vertex_buffer: BufferHandle<GlResources, Vertex>,
     index_buffer: BufferHandle<GlResources, u32>,
-    params: TextShaderParams,
+    params: TextShaderParams<GlResources>,
 }
 
 impl TextRenderer {
@@ -261,7 +265,7 @@ impl TextRenderer {
     ///
     /// Construct a new ref batch for the current number of vertices
     ///
-    fn make_batch(&mut self, graphics: &mut Graphics<GlDevice>) -> Result<RefBatch<TextShaderParams>, BatchError> {
+    fn make_batch(&mut self, graphics: &mut Graphics<GlDevice>) -> Result<RefBatch<TextShaderParams<GlResources>>, BatchError> {
         let mesh = Mesh::from_format(
             self.vertex_buffer.clone(),
             self.vertex_data.len() as VertexCount
@@ -347,8 +351,8 @@ struct Vertex {
 }
 
 #[shader_param]
-struct TextShaderParams {
+struct TextShaderParams<R: Resources> {
     u_model_view_proj: [[f32; 4]; 4],
     u_screen_size: [f32; 2],
-    u_tex_font: TextureParam<GlResources>,
+    u_tex_font: TextureParam<R>,
 }

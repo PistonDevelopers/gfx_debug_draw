@@ -10,6 +10,10 @@ git = "https://github.com/gfx-rs/gfx-rs"
 [dependencies.gfx_macros]
 git = "https://github.com/gfx-rs/gfx-rs"
 
+[dependencies.gfx_device_gl]
+git = "https://github.com/gfx-rs/gfx_device_gl"
+version = "0.2.0"
+
 [dependencies.piston-gfx_texture]
 git = "https://github.com/pistondevelopers/gfx_texture.git"
 
