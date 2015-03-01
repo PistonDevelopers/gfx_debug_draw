@@ -4,31 +4,38 @@ use gfx::batch::{
 };
 
 use gfx::{
+    BufferHandle,
     BufferUsage,
     Device,
     DeviceExt,
     DrawState,
     Frame,
-    GlDevice,
-    GlResources,
     Graphics,
     Mesh,
     PrimitiveType,
     ProgramError,
     ProgramHandle,
-    BufferHandle,
+    Resources,
     ToSlice,
     VertexCount,
 };
 
+use gfx_device_gl::{
+    GlDevice,
+    GlResources,
+};
+
+use gfx_device_gl::GlResources as R;
+
 use utils::{grow_buffer, MAT4_ID};
+use std::marker::PhantomData;
 
 pub struct LineRenderer {
     program: ProgramHandle<GlResources>,
     state: DrawState,
     vertex_data: Vec<Vertex>,
     vertex_buffer: BufferHandle<GlResources, Vertex>,
-    params: Params,
+    params: LineShaderParams<GlResources>,
 }
 
 impl LineRenderer {
@@ -47,7 +54,10 @@ impl LineRenderer {
             program: program,
             state: DrawState::new(),
             vertex_buffer: vertex_buffer,
-            params: Params { u_model_view_proj: MAT4_ID },
+            params: LineShaderParams {
+                u_model_view_proj: MAT4_ID,
+                _marker: PhantomData,
+            },
         })
     }
 
@@ -95,7 +105,7 @@ impl LineRenderer {
     fn make_batch(
         &mut self,
         graphics: &mut Graphics<GlDevice>
-    ) -> Result<RefBatch<Params>, BatchError> {
+    ) -> Result<RefBatch<LineShaderParams<GlResources>>, BatchError> {
         let mesh = Mesh::from_format(
             self.vertex_buffer.clone(),
             self.vertex_data.len() as VertexCount
@@ -140,6 +150,7 @@ struct Vertex {
 }
 
 #[shader_param]
-struct Params {
+struct LineShaderParams<R: Resources> {
     u_model_view_proj: [[f32; 4]; 4],
+    _marker: PhantomData<R>,
 }
