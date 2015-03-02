@@ -64,13 +64,13 @@ impl<'a> DebugRendererBuilder<'a> {
 
         let bitmap_font = match self.bitmap_font {
             Some(f) => f,
-            None => BitmapFont::from_string(include_str!("../assets/font.fnt")).unwrap()
+            None => BitmapFont::from_string(include_str!("../assets/notosans.fnt")).unwrap()
         };
 
         let bitmap_font_texture = match self.bitmap_font_texture {
             Some(t) => t,
             None => {
-                if let DynamicImage::ImageRgba8(rgba_image) = image::load_from_memory_with_format(include_bytes!("../assets/font.png"), ImageFormat::PNG).unwrap() {
+                if let DynamicImage::ImageRgba8(rgba_image) = image::load_from_memory_with_format(include_bytes!("../assets/notosans.png"), ImageFormat::PNG).unwrap() {
                     Texture::from_image(&mut self.graphics.device, &rgba_image).handle
                 } else {
                     return Err(DebugRendererError::BitmapFontTextureError)
