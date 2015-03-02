@@ -6,6 +6,7 @@
 extern crate gfx;
 extern crate gfx_device_gl;
 extern crate gfx_texture;
+extern crate image;
 extern crate xml;
 
 mod debug_renderer;
@@ -14,4 +15,5 @@ mod text_renderer;
 mod bitmap_font;
 mod utils;
 
-pub use debug_renderer::DebugRenderer;
+pub use debug_renderer::{ DebugRenderer, DebugRendererBuilder };
+pub use bitmap_font::{ BitmapFont };

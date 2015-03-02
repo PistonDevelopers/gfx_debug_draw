@@ -38,7 +38,7 @@ impl BitmapFont {
     ///
     /// Expects file format like:
     ///
-    /// ```
+    /// ```xml
     /// <font>
     ///   <common scaleW="128" scaleH="128" ... />
     ///   <chars count="95">
@@ -69,7 +69,7 @@ impl BitmapFont {
     ///
     /// Expects string format like:
     ///
-    /// ```
+    /// ```xml
     /// <font>
     ///   <common scaleW="128" scaleH="128" ... />
     ///   <chars count="95">

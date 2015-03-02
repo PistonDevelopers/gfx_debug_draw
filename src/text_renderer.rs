@@ -17,6 +17,7 @@ use gfx::{
     Slice,
     SliceKind,
     VertexCount,
+    TextureHandle,
 };
 
 use gfx::tex::{SamplerInfo, FilterMethod, WrapMode};
@@ -32,8 +33,6 @@ use gfx_device_gl::{
     GlDevice,
     GlResources,
 };
-
-use gfx_texture::{ Texture };
 
 use bitmap_font::BitmapFont;
 use utils::{grow_buffer, MAT4_ID};
@@ -55,8 +54,8 @@ impl TextRenderer {
         graphics: &mut Graphics<GlDevice>,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
-        font_xml_path: &Path,
-        font_texture_path: &Path,
+        bitmap_font: BitmapFont,
+        font_texture: TextureHandle<GlResources>,
     ) -> Result<TextRenderer, ProgramError> {
 
         let program = match graphics.device.link_program(VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
@@ -65,11 +64,7 @@ impl TextRenderer {
         };
 
         let vertex_buffer = graphics.device.create_buffer::<Vertex>(initial_buffer_size, BufferUsage::Dynamic);
-
         let index_buffer = graphics.device.create_buffer::<u32>(initial_buffer_size, BufferUsage::Dynamic);
-
-        let font_texture = Texture::from_path(&mut graphics.device, font_texture_path).unwrap();
-        let bitmap_font = BitmapFont::from_path(font_xml_path).unwrap();
 
         let sampler = graphics.device.create_sampler(
            SamplerInfo::new(
@@ -91,7 +86,7 @@ impl TextRenderer {
             params: TextShaderParams {
                 u_model_view_proj: MAT4_ID,
                 u_screen_size: [frame_size[0] as f32, frame_size[1] as f32],
-                u_tex_font: (font_texture.handle, Some(sampler)),
+                u_tex_font: (font_texture, Some(sampler)),
             },
         })
     }

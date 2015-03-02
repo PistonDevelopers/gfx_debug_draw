@@ -1,5 +1,3 @@
-#![feature(old_path)]
-
 extern crate piston;
 extern crate shader_version;
 extern crate sdl2;
@@ -12,7 +10,7 @@ extern crate "gfx_gl" as gl;
 extern crate gfx_debug_draw;
 extern crate gfx_device_gl;
 
-use gfx_debug_draw::{DebugRenderer};
+use gfx_debug_draw::{DebugRendererBuilder};
 
 use gl::Gl;
 
@@ -68,13 +66,7 @@ fn main() {
 
     let mut graphics = gfx::Graphics::new(device);
 
-    let mut debug_renderer = DebugRenderer::new(
-        &mut graphics,
-        [frame.width as u32, frame.height as u32],
-        1,
-        &Path::new("assets/font.fnt"),
-        &Path::new("assets/font.png"),
-    ).unwrap();
+    let mut debug_renderer = DebugRendererBuilder::new(&mut graphics, [frame.width as u32, frame.height as u32]).build().ok().unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
