@@ -5,7 +5,7 @@ extern crate shader_version;
 extern crate sdl2;
 extern crate sdl2_window;
 extern crate gfx;
-extern crate cam;
+extern crate camera_controllers;
 extern crate vecmath;
 extern crate env_logger;
 extern crate "gfx_gl" as gl;
@@ -28,7 +28,7 @@ use vecmath::mat4_id;
 
 use sdl2_window::Sdl2Window;
 
-use cam::{
+use camera_controllers::{
     OrbitZoomCamera,
     OrbitZoomCameraSettings,
     CameraPerspective,
