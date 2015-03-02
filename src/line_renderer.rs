@@ -25,8 +25,6 @@ use gfx_device_gl::{
     GlResources,
 };
 
-use gfx_device_gl::GlResources as R;
-
 use utils::{grow_buffer, MAT4_ID};
 use std::marker::PhantomData;
 
@@ -65,7 +63,6 @@ impl LineRenderer {
     /// Add a line to the batch to be drawn on 'render'
     ///
     pub fn draw_line(&mut self, start: [f32; 3], end: [f32; 3], color: [f32; 4]) {
-        let index = self.vertex_data.len() as u32;
         self.vertex_data.push(Vertex{position: start, color: color});
         self.vertex_data.push(Vertex{position: end, color: color});
     }

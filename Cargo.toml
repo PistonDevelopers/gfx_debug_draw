@@ -20,6 +20,9 @@ git = "https://github.com/pistondevelopers/gfx_texture.git"
 [dependencies.RustyXML]
 git = "https://github.com/Florob/RustyXML.git"
 
+[dependencies.image]
+git = "https://github.com/PistonDevelopers/image"
+
 ###### For example ###########################
 
 [dev-dependencies]

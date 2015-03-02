@@ -3,6 +3,16 @@ use std::old_io::{File};
 
 use xml::Element;
 
+///
+/// Representation of a bitmap font, generated with a tool like
+/// [BMFont](http://www.angelcode.com/products/bmfont/)
+///
+/// A BitmapFont describes a bitmap font texture, providing a mapping from character
+/// codes to a rectangular area within a corresponding font texture that contains a
+/// bitmap representation for that character code.
+///
+/// See http://www.angelcode.com/products/bmfont/doc/file_format.html for more information.
+///
 pub struct BitmapFont {
     pub scale_w: u8,
     pub scale_h: u8,
@@ -24,11 +34,66 @@ pub struct BitmapCharacter {
 impl BitmapFont {
 
     ///
-    /// Construct a BitmapFont for the xml configuration file at the given path
+    /// Constructs a BitmapFont for the xml configuration file at the given path
+    ///
+    /// Expects file format like:
+    ///
+    /// ```xml
+    /// <font>
+    ///   <common scaleW="128" scaleH="128" ... />
+    ///   <chars count="95">
+    ///     <char id="32" x="2" y="2" width="0" height="0" xoffset="0" yoffset="14" xadvance="16" ... />
+    ///     ...
+    ///   </chars>
+    /// ```
+    ///
+    /// See http://www.angelcode.com/products/bmfont/doc/file_format.html for more information.
     ///
     pub fn from_path(path: &Path) -> Result<BitmapFont, &'static str> {
-        let xml_root = try!(parse_file(path));
 
+        let mut file = match File::open(path) {
+            Ok(file) => file,
+            Err(_) => return Err("Failed to open font file at path.")
+        };
+
+        let xml_string = match file.read_to_string() {
+            Ok(file_string) => file_string,
+            Err(_) => return Err("Failed to read font file.")
+        };
+
+        BitmapFont::from_string(&xml_string[..])
+    }
+
+    ///
+    /// Constructs a BitmapFont from the given string
+    ///
+    /// Expects string format like:
+    ///
+    /// ```xml
+    /// <font>
+    ///   <common scaleW="128" scaleH="128" ... />
+    ///   <chars count="95">
+    ///     <char id="32" x="2" y="2" width="0" height="0" xoffset="0" yoffset="14" xadvance="16" ... />
+    ///     ...
+    ///   </chars>
+    /// ```
+    ///
+    /// See http://www.angelcode.com/products/bmfont/doc/file_format.html for more information.
+    ///
+    ///
+    pub fn from_string(xml_string: &str) -> Result<BitmapFont, &'static str> {
+        match xml_string.parse() {
+            Ok(xml_root) =>  {
+                BitmapFont::from_xml_document(&xml_root)
+            },
+            Err(_) => Err("Error while parsing font document."),
+        }
+    }
+
+    ///
+    /// Constructs a BitmapFont for the given root xml element
+    ///
+    fn from_xml_document(xml_root: &Element) -> Result<BitmapFont, &'static str> {
         let chars_element = match xml_root.get_child("chars", None) {
             Some(chars_element) => chars_element,
             None => return Err("Missing <chars> element"),
@@ -60,29 +125,6 @@ impl BitmapFont {
         }
 
         Ok(bitmap_font)
-    }
-}
-
-///
-/// Parse the file at the given path into an XML element tree
-///
-fn parse_file(path: &Path) -> Result<Element, &'static str> {
-
-    let file_result = File::open(path);
-
-    let mut file = match file_result {
-        Ok(file) => file,
-        Err(_) => return Err("Failed to open font file at path.")
-    };
-
-    let xml_string = match file.read_to_string() {
-        Ok(file_string) => file_string,
-        Err(_) => return Err("Failed to read font file.")
-    };
-
-    match xml_string.parse() {
-        Ok(root_element) => Ok(root_element),
-        Err(_) => Err("Error while parsing font file."),
     }
 }
 
