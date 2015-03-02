@@ -41,4 +41,4 @@ debug_renderer.draw_text_on_screen(
 
 ## Licenses of included assets
 
-Default bitmap font was generated from [Google Noto](https://www.google.com/get/noto/) (Apache2)
+Default bitmap font was generated from [Google Noto](https://www.google.com/get/noto/) - [Apache2 License](https://github.com/PistonDevelopers/gfx-debug-draw/blob/master/assets/LICENSE-2.0.txt)
