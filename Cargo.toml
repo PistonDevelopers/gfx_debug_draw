@@ -41,8 +41,8 @@ git = "https://github.com/gfx-rs/gfx-rs"
 [dev-dependencies.gfx_macros]
 git = "https://github.com/gfx-rs/gfx-rs"
 
-[dev-dependencies.piston3d-cam]
-git = "https://github.com/pistondevelopers/cam"
+[dev-dependencies.camera_controllers]
+git = "https://github.com/pistondevelopers/camera_controllers"
 
 [dev-dependencies.piston2d-opengl_graphics]
 git = "https://github.com/PistonDevelopers/opengl_graphics"
