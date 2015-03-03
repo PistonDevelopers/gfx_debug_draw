@@ -8,11 +8,10 @@ authors = ["Steve Jahns <s.t.jahns@gmail.com>"]
 git = "https://github.com/gfx-rs/gfx-rs"
 
 [dependencies.gfx_macros]
-git = "https://github.com/gfx-rs/gfx-rs"
+git = "https://github.com/gfx-rs/gfx_macros"
 
 [dependencies.gfx_device_gl]
 git = "https://github.com/gfx-rs/gfx_device_gl"
-version = "0.2.0"
 
 [dependencies.piston-gfx_texture]
 git = "https://github.com/pistondevelopers/gfx_texture.git"
@@ -38,17 +37,8 @@ git = "https://github.com/PistonDevelopers/piston"
 [dev-dependencies.shader_version]
 git = "https://github.com/PistonDevelopers/shader_version"
 
-[dev-dependencies.gfx]
-git = "https://github.com/gfx-rs/gfx-rs"
-
-[dev-dependencies.gfx_macros]
-git = "https://github.com/gfx-rs/gfx-rs"
-
 [dev-dependencies.camera_controllers]
 git = "https://github.com/pistondevelopers/camera_controllers"
-
-[dev-dependencies.piston2d-opengl_graphics]
-git = "https://github.com/PistonDevelopers/opengl_graphics"
 
 [dev-dependencies.sdl2]
 git = "https://github.com/AngryLawyer/rust-sdl2"

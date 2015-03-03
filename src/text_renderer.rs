@@ -23,7 +23,7 @@ use gfx::{
 use gfx::tex::{SamplerInfo, FilterMethod, WrapMode};
 
 use gfx::batch::{
-    BatchError,
+    Error,
     RefBatch,
 };
 
@@ -246,7 +246,7 @@ impl TextRenderer {
 
         match self.make_batch(graphics) {
             Ok(batch) =>  {
-                graphics.draw(&batch, &self.params, frame);
+                graphics.draw(&batch, &self.params, frame).unwrap();
             },
             Err(e) => {
                 println!("Error creating debug render batch: {:?}", e);
@@ -260,7 +260,7 @@ impl TextRenderer {
     ///
     /// Construct a new ref batch for the current number of vertices
     ///
-    fn make_batch(&mut self, graphics: &mut Graphics<GlDevice>) -> Result<RefBatch<TextShaderParams<GlResources>>, BatchError> {
+    fn make_batch(&mut self, graphics: &mut Graphics<GlDevice>) -> Result<RefBatch<TextShaderParams<GlResources>>, Error> {
         let mesh = Mesh::from_format(
             self.vertex_buffer.clone(),
             self.vertex_data.len() as VertexCount
