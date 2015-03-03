@@ -14,6 +14,12 @@ let mut debug_renderer = DebugRendererBuilder::new(
 
 ...
 
+// On viewport resized ...
+
+debug_renderer.resize(viewport_width, viewport_height);
+
+...
+
 // In render loop...
 
 // Draw red line from origin along x-axis
@@ -35,6 +41,13 @@ debug_renderer.draw_text_on_screen(
 	"Hello World!", // Text to draw
 	[10, 10], // Pixel coordinates relative to top-left corner of screen
 	[1.0, 0.4, 0.4, 0.7] // Text color
+);
+
+// Submit the final batch of all lines and text for rendering
+debug_renderer.render(
+	&mut graphics, // gfx::Graphics
+	&frame, // gfx::Frame
+	camera_projection, // Current camera projection matrix
 );
 
 ```
