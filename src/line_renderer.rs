@@ -1,5 +1,5 @@
 use gfx::batch::{
-    BatchError,
+    Error,
     RefBatch,
 };
 
@@ -86,7 +86,7 @@ impl LineRenderer {
 
         match self.make_batch(graphics) {
             Ok(batch) =>  {
-                graphics.draw(&batch, &self.params, frame);
+                graphics.draw(&batch, &self.params, frame).unwrap();
             },
             Err(e) => {
                 println!("Error creating debug render batch: {:?}", e);
@@ -102,7 +102,7 @@ impl LineRenderer {
     fn make_batch(
         &mut self,
         graphics: &mut Graphics<GlDevice>
-    ) -> Result<RefBatch<LineShaderParams<GlResources>>, BatchError> {
+    ) -> Result<RefBatch<LineShaderParams<GlResources>>, Error> {
         let mesh = Mesh::from_format(
             self.vertex_buffer.clone(),
             self.vertex_data.len() as VertexCount
