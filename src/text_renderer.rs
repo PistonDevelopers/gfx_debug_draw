@@ -14,6 +14,7 @@ use gfx::{
     ProgramError,
     ProgramHandle,
     Resources,
+    ShaderSource,
     Slice,
     SliceKind,
     VertexCount,
@@ -50,10 +51,24 @@ impl<D: Device> TextRenderer<D> {
         font_texture: TextureHandle<D::Resources>,
     ) -> Result<TextRenderer<D>, ProgramError> {
 
-        // TODO - Currently only have shaders for OpenGL, and no way to pick the right shader
-        // sources ...
+        let shader_model = graphics.device.get_capabilities().shader_model;
 
-        let program = match graphics.device.link_program(VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
+        let vertex = ShaderSource {
+            glsl_120: Some(VERTEX_SRC[0]),
+            glsl_150: Some(VERTEX_SRC[1]),
+            .. ShaderSource::empty()
+        };
+
+        let fragment = ShaderSource {
+            glsl_120: Some(FRAGMENT_SRC[0]),
+            glsl_150: Some(FRAGMENT_SRC[1]),
+            .. ShaderSource::empty()
+        };
+
+        let program = match graphics.device.link_program(
+            vertex.choose(shader_model).unwrap(),
+            fragment.choose(shader_model).unwrap()
+        ) {
             Ok(program_handle) => program_handle,
             Err(e) => return Err(e),
         };
@@ -261,7 +276,49 @@ impl<D: Device> TextRenderer<D> {
     }
 }
 
-static VERTEX_SRC: &'static [u8] = b"
+static VERTEX_SRC: [&'static [u8]; 2] = [
+b"
+    #version 120
+
+    uniform vec2 u_screen_size;
+    uniform mat4 u_model_view_proj;
+    uniform sampler2D u_tex_font;
+
+    attribute vec2 position;
+    attribute vec4 world_position;
+    in int screen_relative;
+    attribute vec4 color;
+    attribute vec2 texcoords;
+    varying vec4 v_color;
+    varying vec2 v_TexCoord;
+
+    void main() {
+
+        // on-screen offset from text origin
+        vec2 screen_offset = vec2(
+            2 * position.x / u_screen_size.x - 1,
+            1 - 2 * position.y / u_screen_size.y
+        );
+
+        vec4 screen_position = u_model_view_proj * world_position;
+
+        // perspective divide to get normalized device coords
+        vec2 world_offset = vec2(
+            screen_position.x / screen_position.z + 1,
+            screen_position.y / screen_position.z - 1
+        );
+
+        // on-screen offset accounting for world_position
+        world_offset = screen_relative == 0 ? world_offset : vec2(0.0, 0.0);
+
+        gl_Position = vec4(world_offset + screen_offset, 0, 1.0);
+
+        v_TexCoord = texcoords;
+        v_color = color;
+
+    }
+",
+b"
     #version 150 core
 
     uniform vec2 u_screen_size;
@@ -300,10 +357,24 @@ static VERTEX_SRC: &'static [u8] = b"
         v_color = color;
 
     }
-";
+"];
 
-static FRAGMENT_SRC: &'static [u8] = b"
-    #version 150
+static FRAGMENT_SRC: [&'static [u8]; 2] = [
+b"
+    #version 120
+
+    uniform sampler2D u_tex_font;
+
+    varying vec4 v_color;
+    varying vec2 v_TexCoord;
+
+    void main() {
+        vec4 font_color = texture2D(u_tex_font, v_TexCoord);
+        gl_FragColor = vec4(v_color.xyz, font_color.a * v_color.a);
+    }
+",
+b"
+    #version 150 core
 
     uniform sampler2D u_tex_font;
 
@@ -315,7 +386,7 @@ static FRAGMENT_SRC: &'static [u8] = b"
         vec4 font_color = texture(u_tex_font, v_TexCoord);
         out_color = vec4(v_color.xyz, font_color.a * v_color.a);
     }
-";
+"];
 
 #[vertex_format]
 #[derive(Copy)]
