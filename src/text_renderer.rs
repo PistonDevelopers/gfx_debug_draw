@@ -26,34 +26,32 @@ use gfx::batch::bind;
 
 use gfx::shade::TextureParam;
 
-use gfx_device_gl::{
-    GlDevice,
-    GlResources,
-};
-
 use bitmap_font::BitmapFont;
 use utils::{grow_buffer, MAT4_ID};
 
-pub struct TextRenderer {
-    program: ProgramHandle<GlResources>,
+pub struct TextRenderer<D: Device> {
+    program: ProgramHandle<D::Resources>,
     state: DrawState,
     bitmap_font: BitmapFont,
     vertex_data: Vec<Vertex>,
     index_data: Vec<u32>,
-    vertex_buffer: BufferHandle<GlResources, Vertex>,
-    index_buffer: BufferHandle<GlResources, u32>,
-    params: TextShaderParams<GlResources>,
+    vertex_buffer: BufferHandle<D::Resources, Vertex>,
+    index_buffer: BufferHandle<D::Resources, u32>,
+    params: TextShaderParams<D::Resources>,
 }
 
-impl TextRenderer {
+impl<D: Device> TextRenderer<D> {
 
     pub fn new(
-        graphics: &mut Graphics<GlDevice>,
+        graphics: &mut Graphics<D>,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: BitmapFont,
-        font_texture: TextureHandle<GlResources>,
-    ) -> Result<TextRenderer, ProgramError> {
+        font_texture: TextureHandle<D::Resources>,
+    ) -> Result<TextRenderer<D>, ProgramError> {
+
+        // TODO - Currently only have shaders for OpenGL, and no way to pick the right shader
+        // sources ...
 
         let program = match graphics.device.link_program(VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
             Ok(program_handle) => program_handle,
@@ -224,18 +222,18 @@ impl TextRenderer {
     ///
     pub fn render(
         &mut self,
-        graphics: &mut Graphics<GlDevice>,
-        frame: &Frame<GlResources>,
+        graphics: &mut Graphics<D>,
+        frame: &Frame<D::Resources>,
         projection: [[f32; 4]; 4],
     ) {
         self.params.u_model_view_proj = projection;
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = grow_buffer(graphics, self.vertex_buffer, self.vertex_data.len());
+            self.vertex_buffer = grow_buffer(graphics, self.vertex_buffer.clone(), self.vertex_data.len());
         }
 
         if self.index_data.len() > self.index_buffer.len() {
-            self.index_buffer = grow_buffer(graphics, self.index_buffer, self.index_data.len());
+            self.index_buffer = grow_buffer(graphics, self.index_buffer.clone(), self.index_data.len());
         }
 
         graphics.device.update_buffer(self.vertex_buffer.clone(), &self.vertex_data[..], 0);

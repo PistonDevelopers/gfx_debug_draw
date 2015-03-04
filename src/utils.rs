@@ -5,16 +5,11 @@ use gfx::{
     Graphics,
 };
 
-use gfx_device_gl::{
-    GlDevice,
-    GlResources,
-};
-
-pub fn grow_buffer<T>(
-    graphics: &mut Graphics<GlDevice>,
-    buffer: BufferHandle<GlResources, T>,
+pub fn grow_buffer<D: Device, T>(
+    graphics: &mut Graphics<D>,
+    buffer: BufferHandle<D::Resources, T>,
     required_size: usize,
-) -> BufferHandle<GlResources, T> {
+) -> BufferHandle<D::Resources, T> {
     let mut size = buffer.len();
     graphics.device.delete_buffer(buffer);
     while size < required_size {
