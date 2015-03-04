@@ -1,7 +1,4 @@
-use gfx::batch::{
-    Error,
-    RefBatch,
-};
+use gfx::batch::bind;
 
 use gfx::{
     BufferHandle,
@@ -84,31 +81,19 @@ impl LineRenderer {
 
         graphics.device.update_buffer(self.vertex_buffer.clone(), &self.vertex_data[..], 0);
 
-        match self.make_batch(graphics) {
-            Ok(batch) =>  {
-                graphics.draw(&batch, &self.params, frame).unwrap();
-            },
-            Err(e) => {
-                println!("Error creating debug render batch: {:?}", e);
-            },
-        }
-
-        self.vertex_data.clear();
-    }
-
-    ///
-    /// Construct a new ref batch for the current number of vertices
-    ///
-    fn make_batch(
-        &mut self,
-        graphics: &mut Graphics<GlDevice>
-    ) -> Result<RefBatch<LineShaderParams<GlResources>>, Error> {
         let mesh = Mesh::from_format(
             self.vertex_buffer.clone(),
             self.vertex_data.len() as VertexCount
         );
+
         let slice = mesh.to_slice(PrimitiveType::Line);
-        graphics.make_batch(&self.program, &mesh, slice, &self.state)
+
+        graphics.renderer.draw(
+            &bind(&self.state, &mesh, slice, &self.program, &self.params),
+            &frame
+        ).unwrap();
+
+        self.vertex_data.clear();
     }
 }
 

@@ -22,10 +22,7 @@ use gfx::{
 
 use gfx::tex::{SamplerInfo, FilterMethod, WrapMode};
 
-use gfx::batch::{
-    Error,
-    RefBatch,
-};
+use gfx::batch::bind;
 
 use gfx::shade::TextureParam;
 
@@ -244,23 +241,6 @@ impl TextRenderer {
         graphics.device.update_buffer(self.vertex_buffer.clone(), &self.vertex_data[..], 0);
         graphics.device.update_buffer(self.index_buffer.clone(), &self.index_data[..], 0);
 
-        match self.make_batch(graphics) {
-            Ok(batch) =>  {
-                graphics.draw(&batch, &self.params, frame).unwrap();
-            },
-            Err(e) => {
-                println!("Error creating debug render batch: {:?}", e);
-            },
-        }
-
-        self.vertex_data.clear();
-        self.index_data.clear();
-    }
-
-    ///
-    /// Construct a new ref batch for the current number of vertices
-    ///
-    fn make_batch(&mut self, graphics: &mut Graphics<GlDevice>) -> Result<RefBatch<TextShaderParams<GlResources>>, Error> {
         let mesh = Mesh::from_format(
             self.vertex_buffer.clone(),
             self.vertex_data.len() as VertexCount
@@ -273,7 +253,13 @@ impl TextRenderer {
             kind: SliceKind::Index32(self.index_buffer.clone(), 0),
         };
 
-        graphics.make_batch(&self.program, &mesh, slice, &self.state)
+        graphics.renderer.draw(
+            &bind(&self.state, &mesh, slice, &self.program, &self.params),
+            &frame
+        ).unwrap();
+
+        self.vertex_data.clear();
+        self.index_data.clear();
     }
 }
 
