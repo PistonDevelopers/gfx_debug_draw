@@ -5,15 +5,11 @@ use image::{self, ImageFormat, DynamicImage};
 use std::error::FromError;
 
 use gfx::{
+    Device,
     Frame,
     Graphics,
     ProgramError,
     TextureHandle,
-};
-
-use gfx_device_gl::{
-    GlDevice,
-    GlResources,
 };
 
 use gfx_texture::{ Texture };
@@ -29,17 +25,21 @@ impl FromError<ProgramError> for DebugRendererError {
     }
 }
 
-pub struct DebugRendererBuilder<'a> {
-    graphics: &'a mut Graphics<GlDevice>,
+pub struct DebugRendererBuilder<'a, D: Device>
+        where D::Resources: 'a,
+              D::Mapper: 'a,
+              D::CommandBuffer: 'a,
+              D: 'a {
+    graphics: &'a mut Graphics<D>,
     frame_size: [u32; 2],
     initial_buffer_size: usize,
     bitmap_font: Option<BitmapFont>,
-    bitmap_font_texture: Option<TextureHandle<GlResources>>,
+    bitmap_font_texture: Option<TextureHandle<D::Resources>>,
 }
 
-impl<'a> DebugRendererBuilder<'a> {
+impl<'a, D: Device> DebugRendererBuilder<'a, D> {
 
-    pub fn new(graphics: &'a mut Graphics<GlDevice>, frame_size: [u32; 2]) -> DebugRendererBuilder {
+    pub fn new(graphics: &'a mut Graphics<D>, frame_size: [u32; 2]) -> DebugRendererBuilder<D> {
         DebugRendererBuilder {
             graphics: graphics,
             frame_size: frame_size,
@@ -49,18 +49,18 @@ impl<'a> DebugRendererBuilder<'a> {
         }
     }
 
-    pub fn initial_buffer_size(&mut self, size: usize) -> &DebugRendererBuilder {
+    pub fn initial_buffer_size(&mut self, size: usize) -> &DebugRendererBuilder<D> {
         self.initial_buffer_size = size;
         self
     }
 
-    pub fn bitmap_font(&mut self, bitmap_font: BitmapFont, bitmap_font_texture: TextureHandle<GlResources>) -> &DebugRendererBuilder {
+    pub fn bitmap_font(&mut self, bitmap_font: BitmapFont, bitmap_font_texture: TextureHandle<D::Resources>) -> &DebugRendererBuilder<D> {
         self.bitmap_font = Some(bitmap_font);
         self.bitmap_font_texture = Some(bitmap_font_texture);
         self
     }
 
-    pub fn build(self) -> Result<DebugRenderer, DebugRendererError> {
+    pub fn build(self) -> Result<DebugRenderer<D>, DebugRendererError> {
 
         let bitmap_font = match self.bitmap_font {
             Some(f) => f,
@@ -88,12 +88,12 @@ impl<'a> DebugRendererBuilder<'a> {
     }
 }
 
-pub struct DebugRenderer {
-    line_renderer: LineRenderer,
-    text_renderer: TextRenderer,
+pub struct DebugRenderer<D: Device> {
+    line_renderer: LineRenderer<D>,
+    text_renderer: TextRenderer<D>,
 }
 
-impl DebugRenderer {
+impl<D: Device> DebugRenderer<D> {
 
     pub fn draw_line(&mut self, start: [f32; 3], end: [f32; 3], color: [f32; 4]) {
         self.line_renderer.draw_line(start, end, color);
@@ -119,8 +119,8 @@ impl DebugRenderer {
 
     pub fn render(
         &mut self,
-        graphics: &mut Graphics<GlDevice>,
-        frame: &Frame<GlResources>,
+        graphics: &mut Graphics<D>,
+        frame: &Frame<D::Resources>,
         projection: [[f32; 4]; 4],
     ) {
         self.line_renderer.render(graphics, frame, projection);

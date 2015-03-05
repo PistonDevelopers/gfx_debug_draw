@@ -13,31 +13,44 @@ use gfx::{
     ProgramError,
     ProgramHandle,
     Resources,
+    ShaderSource,
     ToSlice,
     VertexCount,
-};
-
-use gfx_device_gl::{
-    GlDevice,
-    GlResources,
 };
 
 use utils::{grow_buffer, MAT4_ID};
 use std::marker::PhantomData;
 
-pub struct LineRenderer {
-    program: ProgramHandle<GlResources>,
+pub struct LineRenderer<D: Device> {
+    program: ProgramHandle<D::Resources>,
     state: DrawState,
     vertex_data: Vec<Vertex>,
-    vertex_buffer: BufferHandle<GlResources, Vertex>,
-    params: LineShaderParams<GlResources>,
+    vertex_buffer: BufferHandle<D::Resources, Vertex>,
+    params: LineShaderParams<D::Resources>,
 }
 
-impl LineRenderer {
+impl<D: Device> LineRenderer<D> {
 
-    pub fn new(graphics: &mut Graphics<GlDevice>, initial_buffer_size: usize) -> Result<LineRenderer, ProgramError> {
+    pub fn new(graphics: &mut Graphics<D>, initial_buffer_size: usize) -> Result<LineRenderer<D>, ProgramError> {
 
-        let program = match graphics.device.link_program(VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
+        let shader_model = graphics.device.get_capabilities().shader_model;
+
+        let vertex = ShaderSource {
+            glsl_120: Some(VERTEX_SRC[0]),
+            glsl_150: Some(VERTEX_SRC[0]),
+            .. ShaderSource::empty()
+        };
+
+        let fragment = ShaderSource {
+            glsl_120: Some(FRAGMENT_SRC[0]),
+            glsl_150: Some(FRAGMENT_SRC[0]),
+            .. ShaderSource::empty()
+        };
+
+        let program = match graphics.device.link_program(
+            vertex.choose(shader_model).unwrap(),
+            fragment.choose(shader_model).unwrap()
+        ) {
             Ok(program_handle) => program_handle,
             Err(e) => return Err(e),
         };
@@ -69,14 +82,14 @@ impl LineRenderer {
     ///
     pub fn render(
         &mut self,
-        graphics: &mut Graphics<GlDevice>,
-        frame: &Frame<GlResources>,
+        graphics: &mut Graphics<D>,
+        frame: &Frame<D::Resources>,
         projection: [[f32; 4]; 4],
     ) {
         self.params.u_model_view_proj = projection;
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = grow_buffer(graphics, self.vertex_buffer, self.vertex_data.len());
+            self.vertex_buffer = grow_buffer(graphics, self.vertex_buffer.clone(), self.vertex_data.len());
         }
 
         graphics.device.update_buffer(self.vertex_buffer.clone(), &self.vertex_data[..], 0);
@@ -97,7 +110,21 @@ impl LineRenderer {
     }
 }
 
-static VERTEX_SRC: &'static [u8] = b"
+static VERTEX_SRC: [&'static [u8]; 2] = [
+b"
+    #version 120
+
+    uniform mat4 u_model_view_proj;
+    attribute vec3 position;
+    attribute vec4 color;
+    varying vec4 v_color;
+
+    void main() {
+        gl_Position = u_model_view_proj * vec4(position, 1.0);
+        v_color = color;
+    }
+",
+b"
     #version 150 core
 
     uniform mat4 u_model_view_proj;
@@ -109,9 +136,19 @@ static VERTEX_SRC: &'static [u8] = b"
         gl_Position = u_model_view_proj * vec4(position, 1.0);
         v_color = color;
     }
-";
+"];
 
-static FRAGMENT_SRC: &'static [u8] = b"
+static FRAGMENT_SRC: [&'static [u8]; 2] = [
+b"
+    #version 120
+
+    varying vec4 v_color;
+
+    void main() {
+        gl_FragColor = v_color;
+    }
+",
+b"
     #version 150
 
     in vec4 v_color;
@@ -120,7 +157,7 @@ static FRAGMENT_SRC: &'static [u8] = b"
     void main() {
         out_color = v_color;
     }
-";
+"];
 
 #[vertex_format]
 #[derive(Copy)]
