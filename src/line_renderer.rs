@@ -3,8 +3,6 @@ use gfx::batch::bind;
 use gfx::{
     BufferHandle,
     BufferUsage,
-    Device,
-    DeviceExt,
     DrawState,
     Frame,
     Graphics,
@@ -14,9 +12,11 @@ use gfx::{
     ProgramHandle,
     Resources,
     ShaderSource,
-    ToSlice,
     VertexCount,
 };
+
+use gfx::device::Capabilities;
+use gfx::traits::*;
 
 use utils::{grow_buffer, MAT4_ID};
 use std::marker::PhantomData;
@@ -31,9 +31,13 @@ pub struct LineRenderer<D: Device> {
 
 impl<D: Device> LineRenderer<D> {
 
-    pub fn new(graphics: &mut Graphics<D>, initial_buffer_size: usize) -> Result<LineRenderer<D>, ProgramError> {
+    pub fn new<F: Factory<D::Resources>>(
+        device_capabilities: Capabilities,
+        factory: &mut F,
+        initial_buffer_size: usize
+    ) -> Result<LineRenderer<D>, ProgramError> {
 
-        let shader_model = graphics.device.get_capabilities().shader_model;
+        let shader_model = device_capabilities.shader_model;
 
         let vertex = ShaderSource {
             glsl_120: Some(VERTEX_SRC[0]),
@@ -47,7 +51,7 @@ impl<D: Device> LineRenderer<D> {
             .. ShaderSource::empty()
         };
 
-        let program = match graphics.device.link_program(
+        let program = match factory.link_program(
             vertex.choose(shader_model).unwrap(),
             fragment.choose(shader_model).unwrap()
         ) {
@@ -55,7 +59,7 @@ impl<D: Device> LineRenderer<D> {
             Err(e) => return Err(e),
         };
 
-        let vertex_buffer = graphics.device.create_buffer::<Vertex>(initial_buffer_size, BufferUsage::Dynamic);
+        let vertex_buffer = factory.create_buffer::<Vertex>(initial_buffer_size, BufferUsage::Dynamic);
 
         Ok(LineRenderer {
             vertex_data: Vec::new(),
@@ -77,8 +81,26 @@ impl<D: Device> LineRenderer<D> {
         self.vertex_data.push(Vertex{position: end, color: color});
     }
 
+    // NOTE: had to split render() into update() and draw() so they could have separate mutable
+    // references to gfx::traits::Device and gfx::traits::Factory
+
     ///
-    /// Draw and clear the current batch of lines
+    /// Send the current batch of lines to the vertex buffer
+    ///
+    pub fn update<F: Factory<D::Resources>>(
+        &mut self,
+        factory: &mut F,
+    ) {
+        if self.vertex_data.len() > self.vertex_buffer.len() {
+            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<D, F, Vertex>(factory, &self.vertex_buffer.raw(), self.vertex_data.len()));
+        }
+
+        factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
+    }
+
+    ///
+    /// Draw current batch of lines in the vertex buffer. Must be called after update() to populate
+    /// the vertex buffer
     ///
     pub fn render(
         &mut self,
@@ -87,12 +109,6 @@ impl<D: Device> LineRenderer<D> {
         projection: [[f32; 4]; 4],
     ) {
         self.params.u_model_view_proj = projection;
-
-        if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = grow_buffer(graphics, self.vertex_buffer.clone(), self.vertex_data.len());
-        }
-
-        graphics.device.update_buffer(self.vertex_buffer.clone(), &self.vertex_data[..], 0);
 
         let mesh = Mesh::from_format(
             self.vertex_buffer.clone(),

@@ -1,6 +1,5 @@
 #![feature(plugin)]
-#![feature(old_io)]
-#![feature(old_path)]
+#![feature(custom_attribute)]
 #![plugin(gfx_macros)]
 
 extern crate gfx;
@@ -15,5 +14,5 @@ mod text_renderer;
 mod bitmap_font;
 mod utils;
 
-pub use debug_renderer::{ DebugRenderer, DebugRendererBuilder };
-pub use bitmap_font::{ BitmapFont };
+pub use debug_renderer::DebugRenderer;
+pub use bitmap_font::BitmapFont;

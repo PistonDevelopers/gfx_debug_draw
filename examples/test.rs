@@ -6,15 +6,16 @@ extern crate gfx;
 extern crate camera_controllers;
 extern crate vecmath;
 extern crate env_logger;
-extern crate "gfx_gl" as gl;
+extern crate gfx_gl as gl;
 extern crate gfx_debug_draw;
 extern crate gfx_device_gl;
 
-use gfx_debug_draw::{DebugRendererBuilder};
+use gfx_debug_draw::DebugRenderer;
 
 use gl::Gl;
 
 use std::cell::RefCell;
+
 use piston::window::WindowSettings;
 use piston::event::{
     events,
@@ -32,6 +33,8 @@ use camera_controllers::{
     CameraPerspective,
     model_view_projection
 };
+
+use gfx::traits::*;
 
 fn main() {
 
@@ -64,9 +67,9 @@ fn main() {
         stencil: 0
     };
 
-    let mut graphics = gfx::Graphics::new(device);
+    let mut graphics = device.into_graphics();
 
-    let mut debug_renderer = DebugRendererBuilder::new(&mut graphics, [frame.width as u32, frame.height as u32]).build().ok().unwrap();
+    let mut debug_renderer = DebugRenderer::new(*graphics.device.get_capabilities(), &mut graphics.device, [frame.width as u32, frame.height as u32], 64, None, None).ok().unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -141,6 +144,10 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
+            // Since I don't know how to have 2 separate mutable references to GlDevice, need to
+            // update vertex/index buffers and draw in separate calls...
+            // Maybe be able to fix if we get separate GlFactory object
+            debug_renderer.update(&mut graphics.device);
             debug_renderer.render(&mut graphics, &frame, camera_projection);
 
             graphics.end_frame();

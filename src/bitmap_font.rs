@@ -1,5 +1,7 @@
 use std::collections::HashMap;
-use std::old_io::{File};
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 
 use xml::Element;
 
@@ -56,8 +58,9 @@ impl BitmapFont {
             Err(_) => return Err("Failed to open font file at path.")
         };
 
-        let xml_string = match file.read_to_string() {
-            Ok(file_string) => file_string,
+        let mut xml_string = String::new();
+        match file.read_to_string(&mut xml_string) {
+            Ok(_) => {},
             Err(_) => return Err("Failed to read font file.")
         };
 
