@@ -1,11 +1,12 @@
 use std::default::Default;
+use std::mem;
 
 use gfx::{
+    as_byte_slice,
     BlendPreset,
     BufferHandle,
+    IndexBufferHandle,
     BufferUsage,
-    Device,
-    DeviceExt,
     DrawState,
     Frame,
     Graphics,
@@ -20,6 +21,10 @@ use gfx::{
     VertexCount,
     TextureHandle,
 };
+
+use gfx::device::Capabilities;
+
+use gfx::traits::*;
 
 use gfx::tex::{SamplerInfo, FilterMethod, WrapMode};
 
@@ -37,21 +42,22 @@ pub struct TextRenderer<D: Device> {
     vertex_data: Vec<Vertex>,
     index_data: Vec<u32>,
     vertex_buffer: BufferHandle<D::Resources, Vertex>,
-    index_buffer: BufferHandle<D::Resources, u32>,
+    index_buffer: IndexBufferHandle<D::Resources, u32>,
     params: TextShaderParams<D::Resources>,
 }
 
 impl<D: Device> TextRenderer<D> {
 
-    pub fn new(
-        graphics: &mut Graphics<D>,
+    pub fn new<F: Factory<D::Resources>>(
+        device_capabilities: Capabilities,
+        factory: &mut F,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: BitmapFont,
         font_texture: TextureHandle<D::Resources>,
     ) -> Result<TextRenderer<D>, ProgramError> {
 
-        let shader_model = graphics.device.get_capabilities().shader_model;
+        let shader_model = device_capabilities.shader_model;
 
         let vertex = ShaderSource {
             glsl_120: Some(VERTEX_SRC[0]),
@@ -65,7 +71,7 @@ impl<D: Device> TextRenderer<D> {
             .. ShaderSource::empty()
         };
 
-        let program = match graphics.device.link_program(
+        let program = match factory.link_program(
             vertex.choose(shader_model).unwrap(),
             fragment.choose(shader_model).unwrap()
         ) {
@@ -73,10 +79,10 @@ impl<D: Device> TextRenderer<D> {
             Err(e) => return Err(e),
         };
 
-        let vertex_buffer = graphics.device.create_buffer::<Vertex>(initial_buffer_size, BufferUsage::Dynamic);
-        let index_buffer = graphics.device.create_buffer::<u32>(initial_buffer_size, BufferUsage::Dynamic);
+        let vertex_buffer = factory.create_buffer::<Vertex>(initial_buffer_size, BufferUsage::Dynamic);
+        let index_buffer = IndexBufferHandle::from_raw(factory.create_buffer_raw(initial_buffer_size * mem::size_of::<u32>(), BufferUsage::Dynamic));
 
-        let sampler = graphics.device.create_sampler(
+        let sampler = factory.create_sampler(
            SamplerInfo::new(
                FilterMethod::Scale,
                WrapMode::Clamp
@@ -232,27 +238,39 @@ impl<D: Device> TextRenderer<D> {
         }
     }
 
+    // NOTE: had to split render() into update() and draw() so they could have separate mutable
+    // references to gfx::traits::Device and gfx::traits::Factory
+
     ///
-    /// Draw and clear the current batch of lines
+    /// Populate the vertex and index buffers with the current batch of text to be drawn
     ///
-    pub fn render(
+    pub fn update<F: Factory<D::Resources>>(
+        &mut self,
+        factory: &mut F,
+    ) {
+        if self.vertex_data.len() > self.vertex_buffer.len() {
+            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<D, F, Vertex>(factory, self.vertex_buffer.raw(), self.vertex_data.len()));
+        }
+
+        if self.index_data.len() > self.index_buffer.len() {
+            self.index_buffer = IndexBufferHandle::from_raw(grow_buffer::<D, F, u32>(factory, self.index_buffer.raw(), self.index_data.len()));
+        }
+
+        factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
+        factory.update_buffer_raw(&self.index_buffer.raw(), as_byte_slice(&self.index_data[..]), 0);
+    }
+
+    ///
+    /// Draw and clear the current batch of text. Must be called after update() to populate the
+    /// vertex and index buffers
+    ///
+    pub fn render (
         &mut self,
         graphics: &mut Graphics<D>,
         frame: &Frame<D::Resources>,
         projection: [[f32; 4]; 4],
     ) {
         self.params.u_model_view_proj = projection;
-
-        if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = grow_buffer(graphics, self.vertex_buffer.clone(), self.vertex_data.len());
-        }
-
-        if self.index_data.len() > self.index_buffer.len() {
-            self.index_buffer = grow_buffer(graphics, self.index_buffer.clone(), self.index_data.len());
-        }
-
-        graphics.device.update_buffer(self.vertex_buffer.clone(), &self.vertex_data[..], 0);
-        graphics.device.update_buffer(self.index_buffer.clone(), &self.index_data[..], 0);
 
         let mesh = Mesh::from_format(
             self.vertex_buffer.clone(),

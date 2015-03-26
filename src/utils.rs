@@ -1,21 +1,22 @@
+use std::mem;
+
 use gfx::{
-    BufferHandle,
+    RawBufferHandle,
     BufferUsage,
-    Device,
-    Graphics,
 };
 
-pub fn grow_buffer<D: Device, T>(
-    graphics: &mut Graphics<D>,
-    buffer: BufferHandle<D::Resources, T>,
+use gfx::traits::*;
+
+pub fn grow_buffer<D: Device, F: Factory<D::Resources>, T>(
+    factory: &mut F,
+    buffer: &RawBufferHandle<D::Resources>,
     required_size: usize,
-) -> BufferHandle<D::Resources, T> {
-    let mut size = buffer.len();
-    graphics.device.delete_buffer(buffer);
+) -> RawBufferHandle<D::Resources> {
+    let mut size = buffer.get_info().size / mem::size_of::<T>();
     while size < required_size {
         size *= 2;
     }
-    graphics.device.create_buffer::<T>(size, BufferUsage::Dynamic)
+    factory.create_buffer_raw(size, BufferUsage::Dynamic)
 }
 
 pub static MAT4_ID: [[f32; 4]; 4] =
