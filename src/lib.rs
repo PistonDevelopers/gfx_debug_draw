@@ -1,5 +1,6 @@
 #![feature(plugin)]
 #![feature(custom_attribute)]
+#![feature(slice_patterns)]
 #![plugin(gfx_macros)]
 
 extern crate gfx;
