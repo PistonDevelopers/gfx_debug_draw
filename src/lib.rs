@@ -4,7 +4,6 @@
 #![plugin(gfx_macros)]
 
 extern crate gfx;
-extern crate gfx_device_gl;
 extern crate gfx_texture;
 extern crate image;
 extern crate xml;

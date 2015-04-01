@@ -10,14 +10,11 @@ git = "https://github.com/gfx-rs/gfx-rs"
 [dependencies.gfx_macros]
 git = "https://github.com/gfx-rs/gfx_macros"
 
-[dependencies.gfx_device_gl]
-git = "https://github.com/gfx-rs/gfx_device_gl"
-
 [dependencies.piston-gfx_texture]
-git = "https://github.com/pistondevelopers/gfx_texture.git"
+git = "https://github.com/pistondevelopers/gfx_texture"
 
 [dependencies.RustyXML]
-git = "https://github.com/Florob/RustyXML.git"
+git = "https://github.com/Florob/RustyXML"
 
 [dependencies.image]
 git = "https://github.com/PistonDevelopers/image"
@@ -45,5 +42,8 @@ git = "https://github.com/AngryLawyer/rust-sdl2"
 
 [dev-dependencies.pistoncore-sdl2_window]
 git = "https://github.com/PistonDevelopers/sdl2_window"
+
+[dev-dependencies.gfx_device_gl]
+git = "https://github.com/gfx-rs/gfx_device_gl"
 
 ###############################################

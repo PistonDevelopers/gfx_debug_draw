@@ -113,7 +113,7 @@ impl BitmapFont {
             scale_h: get_attribute(&common_element, "scaleH"),
         };
 
-        for char_elem in chars_element.get_children("char", None).iter() {
+        for char_elem in chars_element.get_children("char", None) {
             let character = BitmapCharacter {
                 x: get_attribute(char_elem, "x"),
                 y: get_attribute(char_elem, "y"),
