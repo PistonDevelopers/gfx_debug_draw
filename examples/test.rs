@@ -15,6 +15,7 @@ use gfx_debug_draw::DebugRenderer;
 use gl::Gl;
 
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use piston::window::WindowSettings;
 use piston::event::{
@@ -59,7 +60,7 @@ fn main() {
 
     let mut frame = gfx::Frame::new(win_width as u16, win_height as u16);
 
-    let window = RefCell::new(window);
+    let window = Rc::new(RefCell::new(window));
 
     let clear = gfx::ClearData {
         color: [0.3, 0.3, 0.3, 1.0],
@@ -90,7 +91,7 @@ fn main() {
         std::mem::transmute(sdl2::video::gl_get_proc_address(s))
     });
 
-    for e in events(&window) {
+    for e in events(window) {
 
         e.resize(|width, height| {
             debug_renderer.resize(width, height);
