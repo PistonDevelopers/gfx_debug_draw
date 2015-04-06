@@ -21,21 +21,22 @@ use gfx::traits::*;
 use utils::{grow_buffer, MAT4_ID};
 use std::marker::PhantomData;
 
-pub struct LineRenderer<D: Device> {
+pub struct LineRenderer<D: Device, F: Factory<D::Resources>> {
     program: ProgramHandle<D::Resources>,
     state: DrawState,
     vertex_data: Vec<Vertex>,
     vertex_buffer: BufferHandle<D::Resources, Vertex>,
     params: LineShaderParams<D::Resources>,
+    _factory_marker: PhantomData<F>,
 }
 
-impl<D: Device> LineRenderer<D> {
+impl<D: Device, F: Factory<D::Resources>> LineRenderer<D, F> {
 
-    pub fn new<F: Factory<D::Resources>>(
+    pub fn new(
         device_capabilities: Capabilities,
         factory: &mut F,
         initial_buffer_size: usize
-    ) -> Result<LineRenderer<D>, ProgramError> {
+    ) -> Result<LineRenderer<D, F>, ProgramError> {
 
         let shader_model = device_capabilities.shader_model;
 
@@ -70,6 +71,7 @@ impl<D: Device> LineRenderer<D> {
                 u_model_view_proj: MAT4_ID,
                 _marker: PhantomData,
             },
+            _factory_marker: PhantomData,
         })
     }
 
@@ -81,33 +83,23 @@ impl<D: Device> LineRenderer<D> {
         self.vertex_data.push(Vertex{position: end, color: color});
     }
 
-    // NOTE: had to split render() into update() and draw() so they could have separate mutable
-    // references to gfx::traits::Device and gfx::traits::Factory
-
     ///
-    /// Send the current batch of lines to the vertex buffer
-    ///
-    pub fn update<F: Factory<D::Resources>>(
-        &mut self,
-        factory: &mut F,
-    ) {
-        if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<D, F, Vertex>(factory, &self.vertex_buffer.raw(), self.vertex_data.len()));
-        }
-
-        factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
-    }
-
-    ///
-    /// Draw current batch of lines in the vertex buffer. Must be called after update() to populate
-    /// the vertex buffer
+    /// Draw and clear the current batch of lines
     ///
     pub fn render(
         &mut self,
-        graphics: &mut Graphics<D>,
+        graphics: &mut Graphics<D, F>,
         frame: &Frame<D::Resources>,
         projection: [[f32; 4]; 4],
     ) {
+
+        if self.vertex_data.len() > self.vertex_buffer.len() {
+            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<D, F, Vertex>(&mut graphics.factory, &self.vertex_buffer.raw(), self.vertex_data.len()));
+        }
+
+        graphics.factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
+
+
         self.params.u_model_view_proj = projection;
 
         let mesh = Mesh::from_format(

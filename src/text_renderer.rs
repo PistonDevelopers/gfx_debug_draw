@@ -1,5 +1,6 @@
 use std::default::Default;
 use std::mem;
+use std::marker::PhantomData;
 
 use gfx::{
     as_byte_slice,
@@ -35,7 +36,7 @@ use gfx::shade::TextureParam;
 use bitmap_font::BitmapFont;
 use utils::{grow_buffer, MAT4_ID};
 
-pub struct TextRenderer<D: Device> {
+pub struct TextRenderer<D: Device, F: Factory<D::Resources>> {
     program: ProgramHandle<D::Resources>,
     state: DrawState,
     bitmap_font: BitmapFont,
@@ -44,18 +45,19 @@ pub struct TextRenderer<D: Device> {
     vertex_buffer: BufferHandle<D::Resources, Vertex>,
     index_buffer: IndexBufferHandle<D::Resources, u32>,
     params: TextShaderParams<D::Resources>,
+    _factory_marker: PhantomData<F>,
 }
 
-impl<D: Device> TextRenderer<D> {
+impl<D: Device, F: Factory<D::Resources>> TextRenderer<D, F> {
 
-    pub fn new<F: Factory<D::Resources>>(
+    pub fn new(
         device_capabilities: Capabilities,
         factory: &mut F,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: BitmapFont,
         font_texture: TextureHandle<D::Resources>,
-    ) -> Result<TextRenderer<D>, ProgramError> {
+    ) -> Result<TextRenderer<D, F>, ProgramError> {
 
         let shader_model = device_capabilities.shader_model;
 
@@ -104,6 +106,7 @@ impl<D: Device> TextRenderer<D> {
                 u_screen_size: [frame_size[0] as f32, frame_size[1] as f32],
                 u_tex_font: (font_texture, Some(sampler)),
             },
+            _factory_marker: PhantomData,
         })
     }
 
@@ -238,38 +241,27 @@ impl<D: Device> TextRenderer<D> {
         }
     }
 
-    // NOTE: had to split render() into update() and draw() so they could have separate mutable
-    // references to gfx::traits::Device and gfx::traits::Factory
-
     ///
-    /// Populate the vertex and index buffers with the current batch of text to be drawn
-    ///
-    pub fn update<F: Factory<D::Resources>>(
-        &mut self,
-        factory: &mut F,
-    ) {
-        if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<D, F, Vertex>(factory, self.vertex_buffer.raw(), self.vertex_data.len()));
-        }
-
-        if self.index_data.len() > self.index_buffer.len() {
-            self.index_buffer = IndexBufferHandle::from_raw(grow_buffer::<D, F, u32>(factory, self.index_buffer.raw(), self.index_data.len()));
-        }
-
-        factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
-        factory.update_buffer_raw(&self.index_buffer.raw(), as_byte_slice(&self.index_data[..]), 0);
-    }
-
-    ///
-    /// Draw and clear the current batch of text. Must be called after update() to populate the
-    /// vertex and index buffers
+    /// Draw and clear the current batch of text.
     ///
     pub fn render (
         &mut self,
-        graphics: &mut Graphics<D>,
+        graphics: &mut Graphics<D, F>,
         frame: &Frame<D::Resources>,
         projection: [[f32; 4]; 4],
     ) {
+
+        if self.vertex_data.len() > self.vertex_buffer.len() {
+            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<D, F, Vertex>(&mut graphics.factory, self.vertex_buffer.raw(), self.vertex_data.len()));
+        }
+
+        if self.index_data.len() > self.index_buffer.len() {
+            self.index_buffer = IndexBufferHandle::from_raw(grow_buffer::<D, F, u32>(&mut graphics.factory, self.index_buffer.raw(), self.index_data.len()));
+        }
+
+        graphics.factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
+        graphics.factory.update_buffer_raw(&self.index_buffer.raw(), as_byte_slice(&self.index_data[..]), 0);
+
         self.params.u_model_view_proj = projection;
 
         let mesh = Mesh::from_format(
