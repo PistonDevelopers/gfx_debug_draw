@@ -2,7 +2,6 @@ use bitmap_font::BitmapFont;
 use line_renderer::LineRenderer;
 use text_renderer::TextRenderer;
 use image::{self, ImageFormat, DynamicImage};
-use std::error::FromError;
 
 use gfx::{
     Frame,
@@ -21,8 +20,8 @@ pub enum DebugRendererError {
     BitmapFontTextureError,
 }
 
-impl FromError<ProgramError> for DebugRendererError {
-    fn from_error(err: ProgramError) -> DebugRendererError {
+impl From<ProgramError> for DebugRendererError {
+    fn from(err: ProgramError) -> DebugRendererError {
         DebugRendererError::ShaderProgramError(err)
     }
 }

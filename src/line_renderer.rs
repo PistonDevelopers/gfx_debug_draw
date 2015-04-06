@@ -41,13 +41,13 @@ impl<D: Device> LineRenderer<D> {
 
         let vertex = ShaderSource {
             glsl_120: Some(VERTEX_SRC[0]),
-            glsl_150: Some(VERTEX_SRC[0]),
+            glsl_150: Some(VERTEX_SRC[1]),
             .. ShaderSource::empty()
         };
 
         let fragment = ShaderSource {
             glsl_120: Some(FRAGMENT_SRC[0]),
-            glsl_150: Some(FRAGMENT_SRC[0]),
+            glsl_150: Some(FRAGMENT_SRC[1]),
             .. ShaderSource::empty()
         };
 
