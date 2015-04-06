@@ -18,6 +18,7 @@ git = "https://github.com/Florob/RustyXML"
 
 [dependencies.image]
 git = "https://github.com/PistonDevelopers/image"
+features = ["png"]
 
 ###### For example ###########################
 

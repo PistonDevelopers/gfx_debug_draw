@@ -8,8 +8,7 @@ Library for batched renderering of lines and text in 3D space, using [gfx-rs](ht
 // Initializing...
 
 let mut debug_renderer = DebugRendererBuilder::new(
-	*device.get_capabilities(), // Capablities of device, used to determine shader versions
-	&mut graphics.device, // Struct implementing Factory<R>, eg GlDevice
+	&mut graphics // gfx::Graphics
 	[viewport_width, viewport_height], // width, height of the SDL or GLFW frame/viewport
 	64, // Initial size of vertex buffers
 	None, // Optional BitmapFont, pass None for default built-in library font
@@ -45,16 +44,6 @@ debug_renderer.draw_text_on_screen(
 	"Hello World!", // Text to draw
 	[10, 10], // Pixel coordinates relative to top-left corner of screen
 	[1.0, 0.4, 0.4, 0.7] // Text color
-);
-
-//
-// Send the current batch of lines, text to their vertex and index buffers
-// Note: This is currently separated from render() because GlDevice implements
-// both Device and Factory<R>, but we don't necessarily want to assume they are the
-// same object and its awkward to have 2 mutable references to the same thing
-//
-debug_renderer.update(
-	&mut graphics.device, // Something implmenting Factory<R>, eg GlDevice
 );
 
 // Render the final batch of all lines and text currently present in the vertex/index buffers
