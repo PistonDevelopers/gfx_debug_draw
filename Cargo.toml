@@ -23,7 +23,6 @@ features = ["png"]
 ###### For example ###########################
 
 [dev-dependencies]
-gfx_gl = "*"
 env_logger = "*"
 
 [dev-dependencies.vecmath]

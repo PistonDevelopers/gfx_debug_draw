@@ -6,13 +6,10 @@ extern crate gfx;
 extern crate camera_controllers;
 extern crate vecmath;
 extern crate env_logger;
-extern crate gfx_gl as gl;
 extern crate gfx_debug_draw;
 extern crate gfx_device_gl;
 
 use gfx_debug_draw::DebugRenderer;
-
-use gl::Gl;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -83,10 +80,6 @@ fn main() {
     );
 
     // Start event loop
-
-    Gl::load_with(|s| unsafe {
-        std::mem::transmute(sdl2::video::gl_get_proc_address(s))
-    });
 
     for e in events(window) {
 

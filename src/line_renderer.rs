@@ -3,6 +3,7 @@ use gfx::batch::bind;
 use gfx::{
     BufferHandle,
     BufferUsage,
+    CommandBuffer,
     DrawState,
     Frame,
     Graphics,
@@ -21,22 +22,21 @@ use gfx::traits::*;
 use utils::{grow_buffer, MAT4_ID};
 use std::marker::PhantomData;
 
-pub struct LineRenderer<D: Device, F: Factory<D::Resources>> {
-    program: ProgramHandle<D::Resources>,
+pub struct LineRenderer<R: Resources> {
+    program: ProgramHandle<R>,
     state: DrawState,
     vertex_data: Vec<Vertex>,
-    vertex_buffer: BufferHandle<D::Resources, Vertex>,
-    params: LineShaderParams<D::Resources>,
-    _factory_marker: PhantomData<F>,
+    vertex_buffer: BufferHandle<R, Vertex>,
+    params: LineShaderParams<R>,
 }
 
-impl<D: Device, F: Factory<D::Resources>> LineRenderer<D, F> {
+impl<R: Resources> LineRenderer<R> {
 
-    pub fn new(
+    pub fn new<F: Factory<R>>(
         device_capabilities: Capabilities,
         factory: &mut F,
         initial_buffer_size: usize
-    ) -> Result<LineRenderer<D, F>, ProgramError> {
+    ) -> Result<LineRenderer<R>, ProgramError> {
 
         let shader_model = device_capabilities.shader_model;
 
@@ -71,7 +71,6 @@ impl<D: Device, F: Factory<D::Resources>> LineRenderer<D, F> {
                 u_model_view_proj: MAT4_ID,
                 _marker: PhantomData,
             },
-            _factory_marker: PhantomData,
         })
     }
 
@@ -86,15 +85,19 @@ impl<D: Device, F: Factory<D::Resources>> LineRenderer<D, F> {
     ///
     /// Draw and clear the current batch of lines
     ///
-    pub fn render(
+    pub fn render<
+        C: CommandBuffer<R>,
+        F: Factory<R>,
+        D: Device<Resources = R, CommandBuffer = C>,
+    > (
         &mut self,
         graphics: &mut Graphics<D, F>,
-        frame: &Frame<D::Resources>,
+        frame: &Frame<R>,
         projection: [[f32; 4]; 4],
     ) {
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<D, F, Vertex>(&mut graphics.factory, &self.vertex_buffer.raw(), self.vertex_data.len()));
+            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(&mut graphics.factory, &self.vertex_buffer.raw(), self.vertex_data.len()));
         }
 
         graphics.factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
