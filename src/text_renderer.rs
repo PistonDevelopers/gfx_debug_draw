@@ -1,11 +1,11 @@
 use std::default::Default;
 use std::mem;
-use std::marker::PhantomData;
 
 use gfx::{
     as_byte_slice,
     BlendPreset,
     BufferHandle,
+    CommandBuffer,
     IndexBufferHandle,
     BufferUsage,
     DrawState,
@@ -36,28 +36,27 @@ use gfx::shade::TextureParam;
 use bitmap_font::BitmapFont;
 use utils::{grow_buffer, MAT4_ID};
 
-pub struct TextRenderer<D: Device, F: Factory<D::Resources>> {
-    program: ProgramHandle<D::Resources>,
+pub struct TextRenderer<R: Resources> {
+    program: ProgramHandle<R>,
     state: DrawState,
     bitmap_font: BitmapFont,
     vertex_data: Vec<Vertex>,
     index_data: Vec<u32>,
-    vertex_buffer: BufferHandle<D::Resources, Vertex>,
-    index_buffer: IndexBufferHandle<D::Resources, u32>,
-    params: TextShaderParams<D::Resources>,
-    _factory_marker: PhantomData<F>,
+    vertex_buffer: BufferHandle<R, Vertex>,
+    index_buffer: IndexBufferHandle<R, u32>,
+    params: TextShaderParams<R>,
 }
 
-impl<D: Device, F: Factory<D::Resources>> TextRenderer<D, F> {
+impl<R: Resources> TextRenderer<R> {
 
-    pub fn new(
+    pub fn new<F: Factory<R>> (
         device_capabilities: Capabilities,
         factory: &mut F,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: BitmapFont,
-        font_texture: TextureHandle<D::Resources>,
-    ) -> Result<TextRenderer<D, F>, ProgramError> {
+        font_texture: TextureHandle<R>,
+    ) -> Result<TextRenderer<R>, ProgramError> {
 
         let shader_model = device_capabilities.shader_model;
 
@@ -106,7 +105,6 @@ impl<D: Device, F: Factory<D::Resources>> TextRenderer<D, F> {
                 u_screen_size: [frame_size[0] as f32, frame_size[1] as f32],
                 u_tex_font: (font_texture, Some(sampler)),
             },
-            _factory_marker: PhantomData,
         })
     }
 
@@ -244,19 +242,23 @@ impl<D: Device, F: Factory<D::Resources>> TextRenderer<D, F> {
     ///
     /// Draw and clear the current batch of text.
     ///
-    pub fn render (
+    pub fn render<
+        C: CommandBuffer<R>,
+        F: Factory<R>,
+        D: Device<Resources = R, CommandBuffer = C>,
+    > (
         &mut self,
         graphics: &mut Graphics<D, F>,
-        frame: &Frame<D::Resources>,
+        frame: &Frame<R>,
         projection: [[f32; 4]; 4],
     ) {
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<D, F, Vertex>(&mut graphics.factory, self.vertex_buffer.raw(), self.vertex_data.len()));
+            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(&mut graphics.factory, self.vertex_buffer.raw(), self.vertex_data.len()));
         }
 
         if self.index_data.len() > self.index_buffer.len() {
-            self.index_buffer = IndexBufferHandle::from_raw(grow_buffer::<D, F, u32>(&mut graphics.factory, self.index_buffer.raw(), self.index_data.len()));
+            self.index_buffer = IndexBufferHandle::from_raw(grow_buffer::<R, F, u32>(&mut graphics.factory, self.index_buffer.raw(), self.index_data.len()));
         }
 
         graphics.factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);

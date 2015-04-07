@@ -4,9 +4,11 @@ use text_renderer::TextRenderer;
 use image::{self, ImageFormat, DynamicImage};
 
 use gfx::{
+    CommandBuffer,
     Frame,
     Graphics,
     ProgramError,
+    Resources,
     TextureHandle,
 };
 
@@ -25,20 +27,24 @@ impl From<ProgramError> for DebugRendererError {
     }
 }
 
-pub struct DebugRenderer<D: Device, F: Factory<D::Resources>> {
-    line_renderer: LineRenderer<D, F>,
-    text_renderer: TextRenderer<D, F>,
+pub struct DebugRenderer<R: Resources> {
+    line_renderer: LineRenderer<R>,
+    text_renderer: TextRenderer<R>,
 }
 
-impl<D: Device, F: Factory<D::Resources>> DebugRenderer<D, F> {
+impl<R: Resources> DebugRenderer<R> {
 
-    pub fn new (
+    pub fn new<
+        C: CommandBuffer<R>,
+        F: Factory<R>,
+        D: Device<Resources = R, CommandBuffer = C>,
+    > (
         graphics: &mut Graphics<D, F>,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: Option<BitmapFont>,
-        bitmap_font_texture: Option<TextureHandle<D::Resources>>,
-    ) -> Result<DebugRenderer<D, F>, DebugRendererError> {
+        bitmap_font_texture: Option<TextureHandle<R>>,
+    ) -> Result<DebugRenderer<R>, DebugRendererError> {
 
         let device_capabilities = graphics.device.get_capabilities();
 
@@ -89,7 +95,11 @@ impl<D: Device, F: Factory<D::Resources>> DebugRenderer<D, F> {
         self.text_renderer.draw_text_at_position(text, world_position, color);
     }
 
-    pub fn render (
+    pub fn render<
+        C: CommandBuffer<R>,
+        F: Factory<R>,
+        D: Device<Resources = R, CommandBuffer = C>,
+    > (
         &mut self,
         graphics: &mut Graphics<D, F>,
         frame: &Frame<D::Resources>,
