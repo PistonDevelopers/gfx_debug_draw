@@ -1,55 +1,37 @@
-use gfx::batch::bind;
-
-use gfx::{
-    BufferHandle,
-    BufferUsage,
-    CommandBuffer,
-    DrawState,
-    Frame,
-    Graphics,
-    Mesh,
-    PrimitiveType,
-    ProgramError,
-    ProgramHandle,
-    Resources,
-    ShaderSource,
-    VertexCount,
-};
-
-use gfx::device::Capabilities;
+use gfx;
 use gfx::traits::*;
 
 use utils::{grow_buffer, MAT4_ID};
 use std::marker::PhantomData;
 
-pub struct LineRenderer<R: Resources> {
-    program: ProgramHandle<R>,
-    state: DrawState,
+pub struct LineRenderer<R: gfx::Resources> {
+    program: gfx::ProgramHandle<R>,
+    state: gfx::DrawState,
     vertex_data: Vec<Vertex>,
-    vertex_buffer: BufferHandle<R, Vertex>,
+    vertex_buffer: gfx::BufferHandle<R, Vertex>,
     params: LineShaderParams<R>,
 }
 
-impl<R: Resources> LineRenderer<R> {
+impl<R: gfx::Resources> LineRenderer<R> {
 
-    pub fn new<F: Factory<R>>(
-        device_capabilities: Capabilities,
+    pub fn new<F: gfx::Factory<R>>(
+        device_capabilities: gfx::device::Capabilities,
         factory: &mut F,
         initial_buffer_size: usize
-    ) -> Result<LineRenderer<R>, ProgramError> {
+    ) -> Result<LineRenderer<R>, gfx::ProgramError> {
 
         let shader_model = device_capabilities.shader_model;
 
-        let vertex = ShaderSource {
+        let vertex = gfx::ShaderSource {
             glsl_120: Some(VERTEX_SRC[0]),
             glsl_150: Some(VERTEX_SRC[1]),
-            .. ShaderSource::empty()
+            .. gfx::ShaderSource::empty()
         };
 
-        let fragment = ShaderSource {
+        let fragment = gfx::ShaderSource {
             glsl_120: Some(FRAGMENT_SRC[0]),
             glsl_150: Some(FRAGMENT_SRC[1]),
-            .. ShaderSource::empty()
+            .. gfx::ShaderSource::empty()
         };
 
         let program = match factory.link_program(
@@ -60,12 +42,12 @@ impl<R: Resources> LineRenderer<R> {
             Err(e) => return Err(e),
         };
 
-        let vertex_buffer = factory.create_buffer::<Vertex>(initial_buffer_size, BufferUsage::Dynamic);
+        let vertex_buffer = factory.create_buffer::<Vertex>(initial_buffer_size, gfx::BufferUsage::Dynamic);
 
         Ok(LineRenderer {
             vertex_data: Vec::new(),
             program: program,
-            state: DrawState::new(),
+            state: gfx::DrawState::new(),
             vertex_buffer: vertex_buffer,
             params: LineShaderParams {
                 u_model_view_proj: MAT4_ID,
@@ -86,18 +68,19 @@ impl<R: Resources> LineRenderer<R> {
     /// Draw and clear the current batch of lines
     ///
     pub fn render<
-        C: CommandBuffer<R>,
-        F: Factory<R>,
-        D: Device<Resources = R, CommandBuffer = C>,
+        C: gfx::CommandBuffer<R>,
+        F: gfx::Factory<R>,
+        D: gfx::Device<Resources = R, CommandBuffer = C>,
+        O: gfx::render::target::Output<R>,
     > (
         &mut self,
-        graphics: &mut Graphics<D, F>,
-        frame: &Frame<R>,
+        graphics: &mut gfx::Graphics<D, F>,
+        output: &O,
         projection: [[f32; 4]; 4],
     ) {
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(&mut graphics.factory, &self.vertex_buffer.raw(), self.vertex_data.len()));
+            self.vertex_buffer = gfx::BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(&mut graphics.factory, &self.vertex_buffer.raw(), self.vertex_data.len()));
         }
 
         graphics.factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
@@ -105,16 +88,16 @@ impl<R: Resources> LineRenderer<R> {
 
         self.params.u_model_view_proj = projection;
 
-        let mesh = Mesh::from_format(
+        let mesh = gfx::Mesh::from_format(
             self.vertex_buffer.clone(),
-            self.vertex_data.len() as VertexCount
+            self.vertex_data.len() as gfx::VertexCount
         );
 
-        let slice = mesh.to_slice(PrimitiveType::Line);
+        let slice = mesh.to_slice(gfx::PrimitiveType::Line);
 
         graphics.renderer.draw(
-            &bind(&self.state, &mesh, slice, &self.program, &self.params),
-            &frame
+            &gfx::batch::bind(&self.state, &mesh, slice, &self.program, &self.params),
+            output
         ).unwrap();
 
         self.vertex_data.clear();
@@ -180,7 +163,7 @@ struct Vertex {
 }
 
 #[shader_param]
-struct LineShaderParams<R: Resources> {
+struct LineShaderParams<R: gfx::Resources> {
     u_model_view_proj: [[f32; 4]; 4],
     _marker: PhantomData<R>,
 }

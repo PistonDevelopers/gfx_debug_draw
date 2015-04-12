@@ -17,10 +17,11 @@ use std::rc::Rc;
 use piston::window::{
     WindowSettings,
     OpenGLWindow,
+    Window,
 };
 
 use piston::event::{
-    events,
+    Events,
     RenderEvent,
     ResizeEvent,
 };
@@ -38,6 +39,33 @@ use camera_controllers::{
 
 use gfx::traits::*;
 
+struct WindowOuput<R: gfx::Resources> {
+    pub window: Rc<RefCell<Sdl2Window>>,
+    frame: gfx::FrameBufferHandle<R>,
+    mask: gfx::Mask,
+    gamma: gfx::Gamma,
+}
+
+impl<R: gfx::Resources> gfx::Output<R> for WindowOuput<R> {
+
+    fn get_handle(&self) -> Option<&gfx::FrameBufferHandle<R>> {
+        Some(&self.frame)
+    }
+
+    fn get_size(&self) -> (gfx::tex::Size, gfx::tex::Size) {
+        let piston::window::Size {width: w, height: h} = self.window.borrow().size();
+        (w as gfx::tex::Size, h as gfx::tex::Size)
+    }
+
+    fn get_mask(&self) -> gfx::Mask {
+        self.mask
+    }
+
+    fn get_gamma(&self) -> gfx::Gamma {
+        self.gamma
+    }
+}
+
 fn main() {
 
     env_logger::init().unwrap();
@@ -54,9 +82,14 @@ fn main() {
 
     let mut graphics = gfx_device_gl::create(|s| window.get_proc_address(s)).into_graphics();
 
-    let mut frame = gfx::Frame::new(win_width as u16, win_height as u16);
-
     let window = Rc::new(RefCell::new(window));
+
+    let window_output = WindowOuput {
+        window: window.clone(),
+        frame: graphics.factory.get_main_frame_buffer(),
+        mask: gfx::COLOR | gfx::DEPTH | gfx::STENCIL,
+        gamma: gfx::Gamma::Original
+    };
 
     let clear = gfx::ClearData {
         color: [0.3, 0.3, 0.3, 1.0],
@@ -64,7 +97,7 @@ fn main() {
         stencil: 0
     };
 
-    let mut debug_renderer = DebugRenderer::new(&mut graphics, [frame.width as u32, frame.height as u32], 64, None, None).ok().unwrap();
+    let mut debug_renderer = DebugRenderer::new(&mut graphics, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -81,14 +114,10 @@ fn main() {
 
     // Start event loop
 
-    for e in events(window) {
+    for e in window.events() {
 
         e.resize(|width, height| {
             debug_renderer.resize(width, height);
-
-            // Update frame
-            frame.width = width as u16;
-            frame.height = height as u16;
 
             // Update projection matrix
             projection = CameraPerspective {
@@ -102,7 +131,7 @@ fn main() {
         orbit_zoom_camera.event(&e);
 
         if let Some(args) = e.render_args() {
-            graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &frame);
+            graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &window_output);
 
             let camera_projection = model_view_projection(
                 model,
@@ -135,7 +164,7 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            debug_renderer.render(&mut graphics, &frame, camera_projection);
+            debug_renderer.render(&mut graphics, &window_output, camera_projection);
 
             graphics.end_frame();
         }
