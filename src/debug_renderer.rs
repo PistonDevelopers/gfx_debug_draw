@@ -90,14 +90,15 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         C: gfx::CommandBuffer<R>,
         F: Factory<R>,
         D: Device<Resources = R, CommandBuffer = C>,
+        O: gfx::render::target::Output<R>,
     > (
         &mut self,
         graphics: &mut gfx::Graphics<D, F>,
-        frame: &gfx::Frame<D::Resources>,
+        output: &O,
         projection: [[f32; 4]; 4],
     ) {
-        self.line_renderer.render(graphics, frame, projection);
-        self.text_renderer.render(graphics, frame, projection);
+        self.line_renderer.render(graphics, output, projection);
+        self.text_renderer.render(graphics, output, projection);
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {

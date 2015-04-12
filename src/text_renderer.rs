@@ -217,10 +217,11 @@ impl<R: gfx::Resources> TextRenderer<R> {
         C: gfx::CommandBuffer<R>,
         F: gfx::Factory<R>,
         D: gfx::Device<Resources = R, CommandBuffer = C>,
+        O: gfx::render::target::Output<R>,
     > (
         &mut self,
         graphics: &mut gfx::Graphics<D, F>,
-        frame: &gfx::Frame<R>,
+        output: &O,
         projection: [[f32; 4]; 4],
     ) {
 
@@ -251,7 +252,7 @@ impl<R: gfx::Resources> TextRenderer<R> {
 
         graphics.renderer.draw(
             &gfx::batch::bind(&self.state, &mesh, slice, &self.program, &self.params),
-            &frame
+            output
         ).unwrap();
 
         self.vertex_data.clear();
