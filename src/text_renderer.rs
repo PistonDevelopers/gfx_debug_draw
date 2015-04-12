@@ -1,75 +1,46 @@
 use std::default::Default;
 use std::mem;
 
-use gfx::{
-    as_byte_slice,
-    BlendPreset,
-    BufferHandle,
-    CommandBuffer,
-    IndexBufferHandle,
-    BufferUsage,
-    DrawState,
-    Frame,
-    Graphics,
-    Mesh,
-    PrimitiveType,
-    ProgramError,
-    ProgramHandle,
-    Resources,
-    ShaderSource,
-    Slice,
-    SliceKind,
-    VertexCount,
-    TextureHandle,
-};
-
-use gfx::device::Capabilities;
-
+use gfx;
 use gfx::traits::*;
-
-use gfx::tex::{SamplerInfo, FilterMethod, WrapMode};
-
-use gfx::batch::bind;
-
-use gfx::shade::TextureParam;
 
 use bitmap_font::BitmapFont;
 use utils::{grow_buffer, MAT4_ID};
 
-pub struct TextRenderer<R: Resources> {
-    program: ProgramHandle<R>,
-    state: DrawState,
+pub struct TextRenderer<R: gfx::Resources> {
+    program: gfx::ProgramHandle<R>,
+    state: gfx::DrawState,
     bitmap_font: BitmapFont,
     vertex_data: Vec<Vertex>,
     index_data: Vec<u32>,
-    vertex_buffer: BufferHandle<R, Vertex>,
-    index_buffer: IndexBufferHandle<R, u32>,
+    vertex_buffer: gfx::BufferHandle<R, Vertex>,
+    index_buffer: gfx::IndexBufferHandle<R, u32>,
     params: TextShaderParams<R>,
 }
 
-impl<R: Resources> TextRenderer<R> {
+impl<R: gfx::Resources> TextRenderer<R> {
 
-    pub fn new<F: Factory<R>> (
-        device_capabilities: Capabilities,
+    pub fn new<F: gfx::Factory<R>> (
+        device_capabilities: gfx::device::Capabilities,
         factory: &mut F,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: BitmapFont,
-        font_texture: TextureHandle<R>,
-    ) -> Result<TextRenderer<R>, ProgramError> {
+        font_texture: gfx::TextureHandle<R>,
+    ) -> Result<TextRenderer<R>, gfx::ProgramError> {
 
         let shader_model = device_capabilities.shader_model;
 
-        let vertex = ShaderSource {
+        let vertex = gfx::ShaderSource {
             glsl_120: Some(VERTEX_SRC[0]),
             glsl_150: Some(VERTEX_SRC[1]),
-            .. ShaderSource::empty()
+            .. gfx::ShaderSource::empty()
         };
 
-        let fragment = ShaderSource {
+        let fragment = gfx::ShaderSource {
             glsl_120: Some(FRAGMENT_SRC[0]),
             glsl_150: Some(FRAGMENT_SRC[1]),
-            .. ShaderSource::empty()
+            .. gfx::ShaderSource::empty()
         };
 
         let program = match factory.link_program(
@@ -80,17 +51,17 @@ impl<R: Resources> TextRenderer<R> {
             Err(e) => return Err(e),
         };
 
-        let vertex_buffer = factory.create_buffer::<Vertex>(initial_buffer_size, BufferUsage::Dynamic);
-        let index_buffer = IndexBufferHandle::from_raw(factory.create_buffer_raw(initial_buffer_size * mem::size_of::<u32>(), BufferUsage::Dynamic));
+        let vertex_buffer = factory.create_buffer::<Vertex>(initial_buffer_size, gfx::BufferUsage::Dynamic);
+        let index_buffer = gfx::IndexBufferHandle::from_raw(factory.create_buffer_raw(initial_buffer_size * mem::size_of::<u32>(), gfx::BufferUsage::Dynamic));
 
         let sampler = factory.create_sampler(
-           SamplerInfo::new(
-               FilterMethod::Scale,
-               WrapMode::Clamp
+           gfx::tex::SamplerInfo::new(
+               gfx::tex::FilterMethod::Scale,
+               gfx::tex::WrapMode::Clamp
             )
         );
 
-        let state = DrawState::new().blend(BlendPreset::Alpha);
+        let state = gfx::DrawState::new().blend(gfx::BlendPreset::Alpha);
 
         Ok(TextRenderer {
             vertex_data: Vec::new(),
@@ -243,43 +214,43 @@ impl<R: Resources> TextRenderer<R> {
     /// Draw and clear the current batch of text.
     ///
     pub fn render<
-        C: CommandBuffer<R>,
-        F: Factory<R>,
-        D: Device<Resources = R, CommandBuffer = C>,
+        C: gfx::CommandBuffer<R>,
+        F: gfx::Factory<R>,
+        D: gfx::Device<Resources = R, CommandBuffer = C>,
     > (
         &mut self,
-        graphics: &mut Graphics<D, F>,
-        frame: &Frame<R>,
+        graphics: &mut gfx::Graphics<D, F>,
+        frame: &gfx::Frame<R>,
         projection: [[f32; 4]; 4],
     ) {
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(&mut graphics.factory, self.vertex_buffer.raw(), self.vertex_data.len()));
+            self.vertex_buffer = gfx::BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(&mut graphics.factory, self.vertex_buffer.raw(), self.vertex_data.len()));
         }
 
         if self.index_data.len() > self.index_buffer.len() {
-            self.index_buffer = IndexBufferHandle::from_raw(grow_buffer::<R, F, u32>(&mut graphics.factory, self.index_buffer.raw(), self.index_data.len()));
+            self.index_buffer = gfx::IndexBufferHandle::from_raw(grow_buffer::<R, F, u32>(&mut graphics.factory, self.index_buffer.raw(), self.index_data.len()));
         }
 
         graphics.factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
-        graphics.factory.update_buffer_raw(&self.index_buffer.raw(), as_byte_slice(&self.index_data[..]), 0);
+        graphics.factory.update_buffer_raw(&self.index_buffer.raw(), gfx::as_byte_slice(&self.index_data[..]), 0);
 
         self.params.u_model_view_proj = projection;
 
-        let mesh = Mesh::from_format(
+        let mesh = gfx::Mesh::from_format(
             self.vertex_buffer.clone(),
-            self.vertex_data.len() as VertexCount
+            self.vertex_data.len() as gfx::VertexCount
         );
 
-        let slice = Slice {
+        let slice = gfx::Slice {
             start: 0,
             end: self.index_data.len() as u32,
-            prim_type: PrimitiveType::TriangleList,
-            kind: SliceKind::Index32(self.index_buffer.clone(), 0),
+            prim_type: gfx::PrimitiveType::TriangleList,
+            kind: gfx::SliceKind::Index32(self.index_buffer.clone(), 0),
         };
 
         graphics.renderer.draw(
-            &bind(&self.state, &mesh, slice, &self.program, &self.params),
+            &gfx::batch::bind(&self.state, &mesh, slice, &self.program, &self.params),
             &frame
         ).unwrap();
 
@@ -413,8 +384,8 @@ struct Vertex {
 }
 
 #[shader_param]
-struct TextShaderParams<R: Resources> {
+struct TextShaderParams<R: gfx::Resources> {
     u_model_view_proj: [[f32; 4]; 4],
     u_screen_size: [f32; 2],
-    u_tex_font: TextureParam<R>,
+    u_tex_font: gfx::shade::TextureParam<R>,
 }

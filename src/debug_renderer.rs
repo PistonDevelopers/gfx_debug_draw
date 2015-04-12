@@ -1,49 +1,40 @@
 use bitmap_font::BitmapFont;
 use line_renderer::LineRenderer;
 use text_renderer::TextRenderer;
-use image::{self, ImageFormat, DynamicImage};
 
-use gfx::{
-    CommandBuffer,
-    Frame,
-    Graphics,
-    ProgramError,
-    Resources,
-    TextureHandle,
-};
-
+use gfx;
 use gfx::traits::*;
-
-use gfx_texture::{ Texture };
+use gfx_texture;
+use image;
 
 pub enum DebugRendererError {
-    ShaderProgramError(ProgramError),
+    ShaderProgramError(gfx::ProgramError),
     BitmapFontTextureError,
 }
 
-impl From<ProgramError> for DebugRendererError {
-    fn from(err: ProgramError) -> DebugRendererError {
+impl From<gfx::ProgramError> for DebugRendererError {
+    fn from(err: gfx::ProgramError) -> DebugRendererError {
         DebugRendererError::ShaderProgramError(err)
     }
 }
 
-pub struct DebugRenderer<R: Resources> {
+pub struct DebugRenderer<R: gfx::Resources> {
     line_renderer: LineRenderer<R>,
     text_renderer: TextRenderer<R>,
 }
 
-impl<R: Resources> DebugRenderer<R> {
+impl<R: gfx::Resources> DebugRenderer<R> {
 
     pub fn new<
-        C: CommandBuffer<R>,
+        C: gfx::CommandBuffer<R>,
         F: Factory<R>,
         D: Device<Resources = R, CommandBuffer = C>,
     > (
-        graphics: &mut Graphics<D, F>,
+        graphics: &mut gfx::Graphics<D, F>,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: Option<BitmapFont>,
-        bitmap_font_texture: Option<TextureHandle<R>>,
+        bitmap_font_texture: Option<gfx::TextureHandle<R>>,
     ) -> Result<DebugRenderer<R>, DebugRendererError> {
 
         let device_capabilities = graphics.device.get_capabilities();
@@ -56,8 +47,8 @@ impl<R: Resources> DebugRenderer<R> {
         let bitmap_font_texture = match bitmap_font_texture {
             Some(t) => t,
             None => {
-                if let DynamicImage::ImageRgba8(rgba_image) = image::load_from_memory_with_format(include_bytes!("../assets/notosans.png"), ImageFormat::PNG).unwrap() {
-                    Texture::from_image(&mut graphics.factory, &rgba_image, false, false).handle
+                if let image::DynamicImage::ImageRgba8(rgba_image) = image::load_from_memory_with_format(include_bytes!("../assets/notosans.png"), image::ImageFormat::PNG).unwrap() {
+                    gfx_texture::Texture::from_image(&mut graphics.factory, &rgba_image, false, false).handle
                 } else {
                     return Err(DebugRendererError::BitmapFontTextureError)
                 }
@@ -96,13 +87,13 @@ impl<R: Resources> DebugRenderer<R> {
     }
 
     pub fn render<
-        C: CommandBuffer<R>,
+        C: gfx::CommandBuffer<R>,
         F: Factory<R>,
         D: Device<Resources = R, CommandBuffer = C>,
     > (
         &mut self,
-        graphics: &mut Graphics<D, F>,
-        frame: &Frame<D::Resources>,
+        graphics: &mut gfx::Graphics<D, F>,
+        frame: &gfx::Frame<D::Resources>,
         projection: [[f32; 4]; 4],
     ) {
         self.line_renderer.render(graphics, frame, projection);
