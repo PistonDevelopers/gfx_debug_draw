@@ -1,4 +1,4 @@
-# gfx_debug_draw
+# gfx_debug_draw [![Build Status](https://travis-ci.org/PistonDevelopers/gfx-debug-draw.png?branch=master)](https://travis-ci.org/PistonDevelopers/gfx-debug-draw)
 
 Library for batched renderering of lines and text in 3D space, using [gfx-rs](https://github.com/gfx-rs/gfx-rs).
 
