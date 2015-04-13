@@ -80,13 +80,14 @@ fn main() {
         ).exit_on_esc(true)
     );
 
-    let mut graphics = gfx_device_gl::create(|s| window.get_proc_address(s)).into_graphics();
+    let (mut device, mut factory) = gfx_device_gl::create(|s| window.get_proc_address(s));
+    let mut renderer = factory.create_renderer();
 
     let window = Rc::new(RefCell::new(window));
 
     let window_output = WindowOuput {
         window: window.clone(),
-        frame: graphics.factory.get_main_frame_buffer(),
+        frame: factory.get_main_frame_buffer(),
         mask: gfx::COLOR | gfx::DEPTH | gfx::STENCIL,
         gamma: gfx::Gamma::Original
     };
@@ -97,7 +98,7 @@ fn main() {
         stencil: 0
     };
 
-    let mut debug_renderer = DebugRenderer::new(&mut graphics, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap();
+    let mut debug_renderer = DebugRenderer::new(&device, &mut factory, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -131,7 +132,7 @@ fn main() {
         orbit_zoom_camera.event(&e);
 
         if let Some(args) = e.render_args() {
-            graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &window_output);
+            renderer.clear(clear, gfx::COLOR | gfx::DEPTH, &window_output);
 
             let camera_projection = model_view_projection(
                 model,
@@ -143,8 +144,6 @@ fn main() {
             debug_renderer.draw_line([0.0, 0.0, 0.0], [5.0, 0.0, 0.0], [1.0, 0.0, 0.0, 1.0]);
             debug_renderer.draw_line([0.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 1.0, 0.0, 1.0]);
             debug_renderer.draw_line([0.0, 0.0, 0.0], [0.0, 0.0, 5.0], [0.0, 0.0, 1.0, 1.0]);
-
-            debug_renderer.draw_text_on_screen(&format!("FPS: {}", 1.0 / args.ext_dt)[..], [10, 10], [1.0, 0.4, 0.4, 0.7]);
 
             debug_renderer.draw_text_at_position(
                 "X",
@@ -164,9 +163,13 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            debug_renderer.render(&mut graphics, &window_output, camera_projection);
+            debug_renderer.render(&mut renderer, &mut factory, &window_output, camera_projection);
 
-            graphics.end_frame();
+            device.submit(renderer.as_buffer());
+            renderer.reset();
+
+            device.after_frame();
+            factory.cleanup();
         }
     }
 }

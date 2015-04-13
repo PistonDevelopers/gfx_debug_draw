@@ -216,25 +216,25 @@ impl<R: gfx::Resources> TextRenderer<R> {
     pub fn render<
         C: gfx::CommandBuffer<R>,
         F: gfx::Factory<R>,
-        D: gfx::Device<Resources = R, CommandBuffer = C>,
         O: gfx::render::target::Output<R>,
     > (
         &mut self,
-        graphics: &mut gfx::Graphics<D, F>,
+        renderer: &mut gfx::Renderer<R, C>,
+        factory: &mut F,
         output: &O,
         projection: [[f32; 4]; 4],
     ) {
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = gfx::BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(&mut graphics.factory, self.vertex_buffer.raw(), self.vertex_data.len()));
+            self.vertex_buffer = gfx::BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(factory, self.vertex_buffer.raw(), self.vertex_data.len()));
         }
 
         if self.index_data.len() > self.index_buffer.len() {
-            self.index_buffer = gfx::IndexBufferHandle::from_raw(grow_buffer::<R, F, u32>(&mut graphics.factory, self.index_buffer.raw(), self.index_data.len()));
+            self.index_buffer = gfx::IndexBufferHandle::from_raw(grow_buffer::<R, F, u32>(factory, self.index_buffer.raw(), self.index_data.len()));
         }
 
-        graphics.factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
-        graphics.factory.update_buffer_raw(&self.index_buffer.raw(), gfx::as_byte_slice(&self.index_data[..]), 0);
+        factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
+        factory.update_buffer_raw(&self.index_buffer.raw(), gfx::as_byte_slice(&self.index_data[..]), 0);
 
         self.params.u_model_view_proj = projection;
 
@@ -250,7 +250,7 @@ impl<R: gfx::Resources> TextRenderer<R> {
             kind: gfx::SliceKind::Index32(self.index_buffer.clone(), 0),
         };
 
-        graphics.renderer.draw(
+        renderer.draw(
             &gfx::batch::bind(&self.state, &mesh, slice, &self.program, &self.params),
             output
         ).unwrap();
