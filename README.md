@@ -2,13 +2,16 @@
 
 Library for batched renderering of lines and text in 3D space, using [gfx-rs](https://github.com/gfx-rs/gfx-rs).
 
+[Documentation](http://www.piston.rs/docs/gfx-debug-draw/gfx_debug_draw/)
+
 ## Usage
 
 ```rust
 // Initializing...
 
-let mut debug_renderer = DebugRendererBuilder::new(
-	&mut graphics // gfx::Graphics
+let mut debug_renderer = DebugRenderer::new(
+	&device, // gfx::Device
+	&mut factory // gfx::Factory
 	[viewport_width, viewport_height], // width, height of the SDL or GLFW frame/viewport
 	64, // Initial size of vertex buffers
 	None, // Optional BitmapFont, pass None for default built-in library font
@@ -48,8 +51,9 @@ debug_renderer.draw_text_on_screen(
 
 // Render the final batch of all lines and text currently present in the vertex/index buffers
 debug_renderer.render(
-	&mut graphics, // gfx::Graphics
-	&frame, // gfx::Frame
+	&mut renderer, // gfx::Renderer
+	&mut factory, // gfx::Factory
+	&output, // gfx::Output
 	camera_projection, // Current camera projection matrix
 );
 
