@@ -30,14 +30,15 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         F: Factory<R>,
         D: Device<Resources = R, CommandBuffer = C>,
     > (
-        graphics: &mut gfx::Graphics<D, F>,
+        device: &D,
+        factory: &mut F,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: Option<BitmapFont>,
         bitmap_font_texture: Option<gfx::TextureHandle<R>>,
     ) -> Result<DebugRenderer<R>, DebugRendererError> {
 
-        let device_capabilities = graphics.device.get_capabilities();
+        let device_capabilities = device.get_capabilities();
 
         let bitmap_font = match bitmap_font {
             Some(f) => f,
@@ -48,15 +49,15 @@ impl<R: gfx::Resources> DebugRenderer<R> {
             Some(t) => t,
             None => {
                 if let image::DynamicImage::ImageRgba8(rgba_image) = image::load_from_memory_with_format(include_bytes!("../assets/notosans.png"), image::ImageFormat::PNG).unwrap() {
-                    gfx_texture::Texture::from_image(&mut graphics.factory, &rgba_image, false, false).handle
+                    gfx_texture::Texture::from_image(factory, &rgba_image, false, false).handle
                 } else {
                     return Err(DebugRendererError::BitmapFontTextureError)
                 }
             }
         };
 
-        let line_renderer = try!(LineRenderer::new(*device_capabilities, &mut graphics.factory, initial_buffer_size));
-        let text_renderer = try!(TextRenderer::new(*device_capabilities, &mut graphics.factory, frame_size, initial_buffer_size, bitmap_font, bitmap_font_texture));
+        let line_renderer = try!(LineRenderer::new(*device_capabilities, factory, initial_buffer_size));
+        let text_renderer = try!(TextRenderer::new(*device_capabilities, factory, frame_size, initial_buffer_size, bitmap_font, bitmap_font_texture));
 
         Ok(DebugRenderer {
             line_renderer: line_renderer,
@@ -89,16 +90,16 @@ impl<R: gfx::Resources> DebugRenderer<R> {
     pub fn render<
         C: gfx::CommandBuffer<R>,
         F: Factory<R>,
-        D: Device<Resources = R, CommandBuffer = C>,
         O: gfx::render::target::Output<R>,
     > (
         &mut self,
-        graphics: &mut gfx::Graphics<D, F>,
+        renderer: &mut gfx::Renderer<R, C>,
+        factory: &mut F,
         output: &O,
         projection: [[f32; 4]; 4],
     ) {
-        self.line_renderer.render(graphics, output, projection);
-        self.text_renderer.render(graphics, output, projection);
+        self.line_renderer.render(renderer, factory, output, projection);
+        self.text_renderer.render(renderer, factory, output, projection);
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {

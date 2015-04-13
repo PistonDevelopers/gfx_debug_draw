@@ -70,20 +70,20 @@ impl<R: gfx::Resources> LineRenderer<R> {
     pub fn render<
         C: gfx::CommandBuffer<R>,
         F: gfx::Factory<R>,
-        D: gfx::Device<Resources = R, CommandBuffer = C>,
         O: gfx::render::target::Output<R>,
     > (
         &mut self,
-        graphics: &mut gfx::Graphics<D, F>,
+        renderer: &mut gfx::Renderer<R, C>,
+        factory: &mut F,
         output: &O,
         projection: [[f32; 4]; 4],
     ) {
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = gfx::BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(&mut graphics.factory, &self.vertex_buffer.raw(), self.vertex_data.len()));
+            self.vertex_buffer = gfx::BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(factory, &self.vertex_buffer.raw(), self.vertex_data.len()));
         }
 
-        graphics.factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
+        factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
 
 
         self.params.u_model_view_proj = projection;
@@ -95,7 +95,7 @@ impl<R: gfx::Resources> LineRenderer<R> {
 
         let slice = mesh.to_slice(gfx::PrimitiveType::Line);
 
-        graphics.renderer.draw(
+        renderer.draw(
             &gfx::batch::bind(&self.state, &mesh, slice, &self.program, &self.params),
             output
         ).unwrap();
