@@ -33,8 +33,6 @@ use camera_controllers::{
     model_view_projection
 };
 
-use gfx::traits::*;
-
 fn main() {
 
     env_logger::init().unwrap();
@@ -134,8 +132,6 @@ fn main() {
             );
 
             debug_renderer.render_canvas(canvas, camera_projection);
-            canvas.device.submit(canvas.renderer.as_buffer());
-            canvas.renderer.reset();
         });
     }
 }
