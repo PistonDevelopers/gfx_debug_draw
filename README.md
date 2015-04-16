@@ -70,7 +70,7 @@ debug_renderer.render(
 // Alternatively, if you're using gfx::Canvas,
 
 debug_renderer.render_canvas(
-  canvas, // &mut gfx::Canvas
+	canvas, // &mut gfx::Canvas
 	camera_projection, // Current camera projection matrix
 );
 

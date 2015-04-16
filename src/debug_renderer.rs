@@ -37,14 +37,7 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         bitmap_font: Option<BitmapFont>,
         bitmap_font_texture: Option<gfx::TextureHandle<R>>,
     ) -> Result<DebugRenderer<R>, DebugRendererError> {
-
-        let &mut gfx::Canvas {
-            ref device,
-            ref mut factory,
-            ..
-        } = canvas;
-
-        DebugRenderer::new(device, factory, frame_size, initial_buffer_size, bitmap_font, bitmap_font_texture)
+        DebugRenderer::new(&canvas.device, &mut canvas.factory, frame_size, initial_buffer_size, bitmap_font, bitmap_font_texture)
     }
 
     pub fn new<
@@ -119,13 +112,7 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         canvas: &mut gfx::Canvas<O, D, F>,
         projection: [[f32; 4]; 4],
     ) {
-        let &mut gfx::Canvas {
-            ref mut factory,
-            ref mut renderer,
-            ref mut output,
-            ..
-        } = canvas;
-        self.render(renderer, factory, output, projection);
+        self.render(&mut canvas.renderer, &mut canvas.factory, &canvas.output, projection);
     }
 
     pub fn render<

@@ -13,7 +13,6 @@ extern crate piston_window;
 use gfx_debug_draw::DebugRenderer;
 
 use std::cell::RefCell;
-use std::ops::DerefMut;
 use std::rc::Rc;
 
 use piston::window::WindowSettings;
@@ -53,7 +52,7 @@ fn main() {
     let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
     let mut debug_renderer = DebugRenderer::from_canvas(
-        piston_window.canvas.borrow_mut().deref_mut(),
+        &mut piston_window.canvas.borrow_mut(),
         [win_width as u32, win_height as u32],
         64,
         None,
