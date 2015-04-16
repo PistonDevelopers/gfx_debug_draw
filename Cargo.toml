@@ -46,4 +46,7 @@ git = "https://github.com/PistonDevelopers/sdl2_window"
 [dev-dependencies.gfx_device_gl]
 git = "https://github.com/gfx-rs/gfx_device_gl"
 
+[dev-dependencies.piston_window]
+git = "https://github.com/pistondevelopers/piston_window"
+
 ###############################################

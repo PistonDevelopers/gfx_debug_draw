@@ -8,20 +8,17 @@ extern crate vecmath;
 extern crate env_logger;
 extern crate gfx_debug_draw;
 extern crate gfx_device_gl;
+extern crate piston_window;
 
 use gfx_debug_draw::DebugRenderer;
 
 use std::cell::RefCell;
+use std::ops::DerefMut;
 use std::rc::Rc;
 
-use piston::window::{
-    WindowSettings,
-    OpenGLWindow,
-    Window,
-};
+use piston::window::WindowSettings;
 
 use piston::event::{
-    Events,
     RenderEvent,
     ResizeEvent,
 };
@@ -39,66 +36,29 @@ use camera_controllers::{
 
 use gfx::traits::*;
 
-struct WindowOuput<R: gfx::Resources> {
-    pub window: Rc<RefCell<Sdl2Window>>,
-    frame: gfx::FrameBufferHandle<R>,
-    mask: gfx::Mask,
-    gamma: gfx::Gamma,
-}
-
-impl<R: gfx::Resources> gfx::Output<R> for WindowOuput<R> {
-
-    fn get_handle(&self) -> Option<&gfx::FrameBufferHandle<R>> {
-        Some(&self.frame)
-    }
-
-    fn get_size(&self) -> (gfx::tex::Size, gfx::tex::Size) {
-        let piston::window::Size {width: w, height: h} = self.window.borrow().size();
-        (w as gfx::tex::Size, h as gfx::tex::Size)
-    }
-
-    fn get_mask(&self) -> gfx::Mask {
-        self.mask
-    }
-
-    fn get_gamma(&self) -> gfx::Gamma {
-        self.gamma
-    }
-}
-
 fn main() {
 
     env_logger::init().unwrap();
 
     let (win_width, win_height) = (640, 480);
 
-    let mut window = Sdl2Window::new(
+    let window = Rc::new(RefCell::new(Sdl2Window::new(
         shader_version::OpenGL::_3_2,
         WindowSettings::new(
             "Debug Render Test".to_string(),
             piston::window::Size { width: 640, height: 480 },
         ).exit_on_esc(true)
-    );
+    )));
 
-    let (mut device, mut factory) = gfx_device_gl::create(|s| window.get_proc_address(s));
-    let mut renderer = factory.create_renderer();
+    let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
-    let window = Rc::new(RefCell::new(window));
-
-    let window_output = WindowOuput {
-        window: window.clone(),
-        frame: factory.get_main_frame_buffer(),
-        mask: gfx::COLOR | gfx::DEPTH | gfx::STENCIL,
-        gamma: gfx::Gamma::Original
-    };
-
-    let clear = gfx::ClearData {
-        color: [0.3, 0.3, 0.3, 1.0],
-        depth: 1.0,
-        stencil: 0
-    };
-
-    let mut debug_renderer = DebugRenderer::new(&device, &mut factory, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap();
+    let mut debug_renderer = DebugRenderer::from_canvas(
+        piston_window.canvas.borrow_mut().deref_mut(),
+        [win_width as u32, win_height as u32],
+        64,
+        None,
+        None,
+    ).ok().unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -115,7 +75,7 @@ fn main() {
 
     // Start event loop
 
-    for e in window.events() {
+    for e in piston_window {
 
         e.resize(|width, height| {
             debug_renderer.resize(width, height);
@@ -131,8 +91,19 @@ fn main() {
 
         orbit_zoom_camera.event(&e);
 
-        if let Some(args) = e.render_args() {
-            renderer.clear(clear, gfx::COLOR | gfx::DEPTH, &window_output);
+        e.draw_3d(|canvas| {
+
+            let args = e.render_args().unwrap();
+
+            canvas.renderer.clear(
+                gfx::ClearData {
+                    color: [0.3, 0.3, 0.3, 1.0],
+                    depth: 1.0,
+                    stencil: 0,
+                },
+                gfx::COLOR | gfx::DEPTH,
+                &canvas.output
+            );
 
             let camera_projection = model_view_projection(
                 model,
@@ -163,13 +134,9 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            debug_renderer.render(&mut renderer, &mut factory, &window_output, camera_projection);
-
-            device.submit(renderer.as_buffer());
-            renderer.reset();
-
-            device.after_frame();
-            factory.cleanup();
-        }
+            debug_renderer.render_canvas(canvas, camera_projection);
+            canvas.device.submit(canvas.renderer.as_buffer());
+            canvas.renderer.reset();
+        });
     }
 }

@@ -25,6 +25,28 @@ pub struct DebugRenderer<R: gfx::Resources> {
 
 impl<R: gfx::Resources> DebugRenderer<R> {
 
+    pub fn from_canvas<
+        C: gfx::CommandBuffer<R>,
+        F: Factory<R>,
+        O: gfx::render::target::Output<R>,
+        D: Device<Resources = R, CommandBuffer = C>,
+    > (
+        canvas: &mut gfx::Canvas<O, D, F>,
+        frame_size: [u32; 2],
+        initial_buffer_size: usize,
+        bitmap_font: Option<BitmapFont>,
+        bitmap_font_texture: Option<gfx::TextureHandle<R>>,
+    ) -> Result<DebugRenderer<R>, DebugRendererError> {
+
+        let &mut gfx::Canvas {
+            ref device,
+            ref mut factory,
+            ..
+        } = canvas;
+
+        DebugRenderer::new(device, factory, frame_size, initial_buffer_size, bitmap_font, bitmap_font_texture)
+    }
+
     pub fn new<
         C: gfx::CommandBuffer<R>,
         F: Factory<R>,
@@ -85,6 +107,25 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         color: [f32; 4],
     ) {
         self.text_renderer.draw_text_at_position(text, world_position, color);
+    }
+
+    pub fn render_canvas<
+        C: gfx::CommandBuffer<R>,
+        F: Factory<R>,
+        O: gfx::render::target::Output<R>,
+        D: Device<Resources = R, CommandBuffer = C>,
+    > (
+        &mut self,
+        canvas: &mut gfx::Canvas<O, D, F>,
+        projection: [[f32; 4]; 4],
+    ) {
+        let &mut gfx::Canvas {
+            ref mut factory,
+            ref mut renderer,
+            ref mut output,
+            ..
+        } = canvas;
+        self.render(renderer, factory, output, projection);
     }
 
     pub fn render<
