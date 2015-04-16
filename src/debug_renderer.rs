@@ -49,7 +49,7 @@ impl<R: gfx::Resources> DebugRenderer<R> {
             Some(t) => t,
             None => {
                 if let image::DynamicImage::ImageRgba8(rgba_image) = image::load_from_memory_with_format(include_bytes!("../assets/notosans.png"), image::ImageFormat::PNG).unwrap() {
-                    gfx_texture::Texture::from_image(factory, &rgba_image, false, false).handle
+                    gfx_texture::Texture::from_image(factory, &rgba_image, false, false, false).handle
                 } else {
                     return Err(DebugRendererError::BitmapFontTextureError)
                 }
