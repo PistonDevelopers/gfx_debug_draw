@@ -8,6 +8,7 @@ extern crate vecmath;
 extern crate env_logger;
 extern crate gfx_debug_draw;
 extern crate gfx_device_gl;
+extern crate piston_window;
 
 use gfx_debug_draw::DebugRenderer;
 
@@ -39,33 +40,6 @@ use camera_controllers::{
 
 use gfx::traits::*;
 
-struct WindowOuput<R: gfx::Resources> {
-    pub window: Rc<RefCell<Sdl2Window>>,
-    frame: gfx::FrameBufferHandle<R>,
-    mask: gfx::Mask,
-    gamma: gfx::Gamma,
-}
-
-impl<R: gfx::Resources> gfx::Output<R> for WindowOuput<R> {
-
-    fn get_handle(&self) -> Option<&gfx::FrameBufferHandle<R>> {
-        Some(&self.frame)
-    }
-
-    fn get_size(&self) -> (gfx::tex::Size, gfx::tex::Size) {
-        let piston::window::Size {width: w, height: h} = self.window.borrow().size();
-        (w as gfx::tex::Size, h as gfx::tex::Size)
-    }
-
-    fn get_mask(&self) -> gfx::Mask {
-        self.mask
-    }
-
-    fn get_gamma(&self) -> gfx::Gamma {
-        self.gamma
-    }
-}
-
 fn main() {
 
     env_logger::init().unwrap();
@@ -85,12 +59,8 @@ fn main() {
 
     let window = Rc::new(RefCell::new(window));
 
-    let window_output = WindowOuput {
-        window: window.clone(),
-        frame: factory.get_main_frame_buffer(),
-        mask: gfx::COLOR | gfx::DEPTH | gfx::STENCIL,
-        gamma: gfx::Gamma::Original
-    };
+    let mut piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
+    let mut gfx = piston_window.gfx.clone();
 
     let clear = gfx::ClearData {
         color: [0.3, 0.3, 0.3, 1.0],
@@ -115,7 +85,7 @@ fn main() {
 
     // Start event loop
 
-    for e in window.events() {
+    for e in piston_window {
 
         e.resize(|width, height| {
             debug_renderer.resize(width, height);
@@ -131,8 +101,9 @@ fn main() {
 
         orbit_zoom_camera.event(&e);
 
-        if let Some(args) = e.render_args() {
-            renderer.clear(clear, gfx::COLOR | gfx::DEPTH, &window_output);
+        e.render(|args| {
+
+            renderer.clear(clear, gfx::COLOR | gfx::DEPTH, &gfx.borrow().output);
 
             let camera_projection = model_view_projection(
                 model,
@@ -163,13 +134,13 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            debug_renderer.render(&mut renderer, &mut factory, &window_output, camera_projection);
+            debug_renderer.render(&mut renderer, &mut factory, &gfx.borrow().output, camera_projection);
 
             device.submit(renderer.as_buffer());
             renderer.reset();
 
             device.after_frame();
             factory.cleanup();
-        }
+        });
     }
 }
