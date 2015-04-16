@@ -13,6 +13,7 @@ extern crate piston_window;
 use gfx_debug_draw::DebugRenderer;
 
 use std::cell::RefCell;
+use std::ops::DerefMut;
 use std::rc::Rc;
 
 use piston::window::WindowSettings;
@@ -51,19 +52,13 @@ fn main() {
 
     let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
-    // TEMP - instead just pass Canvas to DebugRenderer
-    let mut debug_renderer = {
-
-        let canvas: &mut gfx::Canvas<gfx_device_gl::Output, gfx_device_gl::Device, gfx_device_gl::Factory> = &mut piston_window.canvas.borrow_mut();
-
-        let &mut gfx::Canvas {
-            ref device,
-            ref mut factory,
-            ..
-        } = canvas;
-
-        DebugRenderer::new(device, factory, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap()
-    };
+    let mut debug_renderer = DebugRenderer::from_canvas(
+        piston_window.canvas.borrow_mut().deref_mut(),
+        [win_width as u32, win_height as u32],
+        64,
+        None,
+        None,
+    ).ok().unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -139,18 +134,7 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            // TEMP - TODO just pass Canvas to render
-            {
-                let &mut gfx::Canvas {
-                    ref mut factory,
-                    ref mut renderer,
-                    ref mut output,
-                    ..
-                } = canvas;
-
-                debug_renderer.render(renderer, factory, output, camera_projection);
-            }
-
+            debug_renderer.render_canvas(canvas, camera_projection);
             canvas.device.submit(canvas.renderer.as_buffer());
             canvas.renderer.reset();
         });
