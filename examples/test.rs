@@ -15,14 +15,9 @@ use gfx_debug_draw::DebugRenderer;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use piston::window::{
-    WindowSettings,
-    OpenGLWindow,
-    Window,
-};
+use piston::window::WindowSettings;
 
 use piston::event::{
-    Events,
     RenderEvent,
     ResizeEvent,
 };
@@ -46,29 +41,29 @@ fn main() {
 
     let (win_width, win_height) = (640, 480);
 
-    let mut window = Sdl2Window::new(
+    let window = Rc::new(RefCell::new(Sdl2Window::new(
         shader_version::OpenGL::_3_2,
         WindowSettings::new(
             "Debug Render Test".to_string(),
             piston::window::Size { width: 640, height: 480 },
         ).exit_on_esc(true)
-    );
+    )));
 
-    let (mut device, mut factory) = gfx_device_gl::create(|s| window.get_proc_address(s));
-    let mut renderer = factory.create_renderer();
+    let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
-    let window = Rc::new(RefCell::new(window));
+    // TEMP - instead just pass Canvas to DebugRenderer
+    let mut debug_renderer = {
 
-    let mut piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
-    let mut gfx = piston_window.gfx.clone();
+        let canvas: &mut gfx::Canvas<gfx_device_gl::Output, gfx_device_gl::Device, gfx_device_gl::Factory> = &mut piston_window.canvas.borrow_mut();
 
-    let clear = gfx::ClearData {
-        color: [0.3, 0.3, 0.3, 1.0],
-        depth: 1.0,
-        stencil: 0
+        let &mut gfx::Canvas {
+            ref device,
+            ref mut factory,
+            ..
+        } = canvas;
+
+        DebugRenderer::new(device, factory, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap()
     };
-
-    let mut debug_renderer = DebugRenderer::new(&device, &mut factory, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -101,9 +96,19 @@ fn main() {
 
         orbit_zoom_camera.event(&e);
 
-        e.render(|args| {
+        e.draw_3d(|canvas| {
 
-            renderer.clear(clear, gfx::COLOR | gfx::DEPTH, &gfx.borrow().output);
+            let args = e.render_args().unwrap();
+
+            canvas.renderer.clear(
+                gfx::ClearData {
+                    color: [0.3, 0.3, 0.3, 1.0],
+                    depth: 1.0,
+                    stencil: 0,
+                },
+                gfx::COLOR | gfx::DEPTH,
+                &canvas.output
+            );
 
             let camera_projection = model_view_projection(
                 model,
@@ -134,13 +139,20 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            debug_renderer.render(&mut renderer, &mut factory, &gfx.borrow().output, camera_projection);
+            // TEMP - TODO just pass Canvas to render
+            {
+                let &mut gfx::Canvas {
+                    ref mut factory,
+                    ref mut renderer,
+                    ref mut output,
+                    ..
+                } = canvas;
 
-            device.submit(renderer.as_buffer());
-            renderer.reset();
+                debug_renderer.render(renderer, factory, output, camera_projection);
+            }
 
-            device.after_frame();
-            factory.cleanup();
+            canvas.device.submit(canvas.renderer.as_buffer());
+            canvas.renderer.reset();
         });
     }
 }
