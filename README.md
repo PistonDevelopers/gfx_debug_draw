@@ -18,6 +18,16 @@ let mut debug_renderer = DebugRenderer::new(
 	None, // Optional texture for BitmapFont, pass None for default built-in library font
 ).ok().unwrap();
 
+// Alternatively, if you have a gfx::Canvas:
+
+let mut debug_renderer = DebugRenderer::from_canvas(
+	&mut canvas, // gfx::Canvas
+	[viewport_width, viewport_height], // width, height of the SDL or GLFW frame/viewport
+	64, // Initial size of vertex buffers
+	None, // Optional BitmapFont, pass None for default built-in library font
+	None, // Optional texture for BitmapFont, pass None for default built-in library font
+).ok().unwrap();
+
 ...
 
 // On viewport resized ...
@@ -54,6 +64,13 @@ debug_renderer.render(
 	&mut renderer, // gfx::Renderer
 	&mut factory, // gfx::Factory
 	&output, // gfx::Output
+	camera_projection, // Current camera projection matrix
+);
+
+// Alternatively, if you're using gfx::Canvas,
+
+debug_renderer.render_canvas(
+  canvas, // &mut gfx::Canvas
 	camera_projection, // Current camera projection matrix
 );
 
