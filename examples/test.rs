@@ -51,7 +51,6 @@ fn main() {
 
     let mut debug_renderer = DebugRenderer::from_canvas(
         &mut piston_window.canvas.borrow_mut(),
-        [win_width as u32, win_height as u32],
         64,
         None,
         None,
@@ -75,8 +74,6 @@ fn main() {
     for e in piston_window {
 
         e.resize(|width, height| {
-            debug_renderer.resize(width, height);
-
             // Update projection matrix
             projection = CameraPerspective {
                 fov: 90.0f32,
@@ -92,15 +89,11 @@ fn main() {
 
             let args = e.render_args().unwrap();
 
-            canvas.renderer.clear(
-                gfx::ClearData {
-                    color: [0.3, 0.3, 0.3, 1.0],
-                    depth: 1.0,
-                    stencil: 0,
-                },
-                gfx::COLOR | gfx::DEPTH,
-                &canvas.output
-            );
+            canvas.clear(gfx::ClearData {
+                color: [0.3, 0.3, 0.3, 1.0],
+                depth: 1.0,
+                stencil: 0,
+            });
 
             let camera_projection = model_view_projection(
                 model,
