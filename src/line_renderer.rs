@@ -20,8 +20,6 @@ impl<R: gfx::Resources> LineRenderer<R> {
         initial_buffer_size: usize
     ) -> Result<LineRenderer<R>, gfx::ProgramError> {
 
-        let shader_model = device_capabilities.shader_model;
-
         let vertex = gfx::ShaderSource {
             glsl_120: Some(VERTEX_SRC[0]),
             glsl_150: Some(VERTEX_SRC[1]),
@@ -34,10 +32,9 @@ impl<R: gfx::Resources> LineRenderer<R> {
             .. gfx::ShaderSource::empty()
         };
 
-        let program = match factory.link_program(
-            vertex.choose(shader_model).unwrap(),
-            fragment.choose(shader_model).unwrap()
-        ) {
+        let program = match factory.link_program_source(
+            vertex, fragment, &device_capabilities
+        ){
             Ok(program_handle) => program_handle,
             Err(e) => return Err(e),
         };
