@@ -79,13 +79,6 @@ impl<R: gfx::Resources> TextRenderer<R> {
         })
     }
 
-    ///
-    /// Respond to a change in window size
-    ///
-    pub fn resize(&mut self, width: u32, height: u32) {
-        self.params.u_screen_size = [width as f32, height as f32];
-    }
-
     pub fn draw_text_at_position(
         &mut self,
         text: &str,
@@ -236,6 +229,10 @@ impl<R: gfx::Resources> TextRenderer<R> {
         factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
         factory.update_buffer_raw(&self.index_buffer.raw(), gfx::as_byte_slice(&self.index_data[..]), 0);
 
+        self.params.u_screen_size = {
+            let (w, h) = output.get_size();
+            [w as f32, h as f32]
+        };
         self.params.u_model_view_proj = projection;
 
         let mesh = gfx::Mesh::from_format(

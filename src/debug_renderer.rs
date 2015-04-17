@@ -32,12 +32,14 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         D: Device<Resources = R, CommandBuffer = C>,
     > (
         canvas: &mut gfx::Canvas<O, D, F>,
-        frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: Option<BitmapFont>,
         bitmap_font_texture: Option<gfx::TextureHandle<R>>,
     ) -> Result<DebugRenderer<R>, DebugRendererError> {
-        DebugRenderer::new(&canvas.device, &mut canvas.factory, frame_size, initial_buffer_size, bitmap_font, bitmap_font_texture)
+        let (w, h) = canvas.output.get_size();
+        DebugRenderer::new(&canvas.device, &mut canvas.factory,
+                           [w as u32, h as u32], initial_buffer_size,
+                           bitmap_font, bitmap_font_texture)
     }
 
     pub fn new<
@@ -128,9 +130,5 @@ impl<R: gfx::Resources> DebugRenderer<R> {
     ) {
         self.line_renderer.render(renderer, factory, output, projection);
         self.text_renderer.render(renderer, factory, output, projection);
-    }
-
-    pub fn resize(&mut self, width: u32, height: u32) {
-        self.text_renderer.resize(width, height);
     }
 }
