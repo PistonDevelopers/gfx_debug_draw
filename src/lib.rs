@@ -14,5 +14,5 @@ mod text_renderer;
 mod bitmap_font;
 mod utils;
 
-pub use debug_renderer::DebugRenderer;
+pub use debug_renderer::{DebugRenderer, DebugRendererError};
 pub use bitmap_font::BitmapFont;
