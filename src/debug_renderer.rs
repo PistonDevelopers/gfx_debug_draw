@@ -7,6 +7,7 @@ use gfx::traits::*;
 use gfx_texture;
 use image;
 
+#[derive(Debug)]
 pub enum DebugRendererError {
     ShaderProgramError(gfx::ProgramError),
     BitmapFontTextureError,
