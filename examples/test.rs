@@ -86,6 +86,7 @@ fn main() {
         orbit_zoom_camera.event(&e);
 
         e.draw_3d(|canvas| {
+            use gfx::Stream;
 
             let args = e.render_args().unwrap();
 

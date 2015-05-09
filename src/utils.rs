@@ -1,17 +1,17 @@
 use std::mem;
 
 use gfx::{
+    handle,
     BufferUsage,
     Factory,
-    RawBufferHandle,
     Resources,
 };
 
 pub fn grow_buffer<R: Resources, F: Factory<R>, T>(
     factory: &mut F,
-    buffer: &RawBufferHandle<R>,
+    buffer: &handle::RawBuffer<R>,
     required_size: usize,
-) -> RawBufferHandle<R> {
+) -> handle::RawBuffer<R> {
     let required_size_bytes = required_size * mem::size_of::<T>();
     let mut size = buffer.get_info().size;
     while size < required_size_bytes {

@@ -5,10 +5,10 @@ use utils::{grow_buffer, MAT4_ID};
 use std::marker::PhantomData;
 
 pub struct LineRenderer<R: gfx::Resources> {
-    program: gfx::ProgramHandle<R>,
+    program: gfx::handle::Program<R>,
     state: gfx::DrawState,
     vertex_data: Vec<Vertex>,
-    vertex_buffer: gfx::BufferHandle<R, Vertex>,
+    vertex_buffer: gfx::handle::Buffer<R, Vertex>,
     params: LineShaderParams<R>,
 }
 
@@ -77,7 +77,9 @@ impl<R: gfx::Resources> LineRenderer<R> {
     ) {
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = gfx::BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(factory, &self.vertex_buffer.raw(), self.vertex_data.len()));
+            self.vertex_buffer = gfx::handle::Buffer::from_raw(
+                grow_buffer::<R, F, Vertex>(factory, &self.vertex_buffer.raw(), self.vertex_data.len())
+            );
         }
 
         factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
