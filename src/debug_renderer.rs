@@ -35,7 +35,7 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         canvas: &mut gfx::Canvas<O, D, F>,
         initial_buffer_size: usize,
         bitmap_font: Option<BitmapFont>,
-        bitmap_font_texture: Option<gfx::TextureHandle<R>>,
+        bitmap_font_texture: Option<gfx::handle::Texture<R>>,
     ) -> Result<DebugRenderer<R>, DebugRendererError> {
         let (w, h) = canvas.output.get_size();
         DebugRenderer::new(&canvas.device, &mut canvas.factory,
@@ -53,7 +53,7 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: Option<BitmapFont>,
-        bitmap_font_texture: Option<gfx::TextureHandle<R>>,
+        bitmap_font_texture: Option<gfx::handle::Texture<R>>,
     ) -> Result<DebugRenderer<R>, DebugRendererError> {
 
         let device_capabilities = device.get_capabilities();

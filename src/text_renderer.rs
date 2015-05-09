@@ -8,13 +8,13 @@ use bitmap_font::BitmapFont;
 use utils::{grow_buffer, MAT4_ID};
 
 pub struct TextRenderer<R: gfx::Resources> {
-    program: gfx::ProgramHandle<R>,
+    program: gfx::handle::Program<R>,
     state: gfx::DrawState,
     bitmap_font: BitmapFont,
     vertex_data: Vec<Vertex>,
     index_data: Vec<u32>,
-    vertex_buffer: gfx::BufferHandle<R, Vertex>,
-    index_buffer: gfx::IndexBufferHandle<R, u32>,
+    vertex_buffer: gfx::handle::Buffer<R, Vertex>,
+    index_buffer: gfx::handle::IndexBuffer<R, u32>,
     params: TextShaderParams<R>,
 }
 
@@ -26,7 +26,7 @@ impl<R: gfx::Resources> TextRenderer<R> {
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: BitmapFont,
-        font_texture: gfx::TextureHandle<R>,
+        font_texture: gfx::handle::Texture<R>,
     ) -> Result<TextRenderer<R>, gfx::ProgramError> {
 
         let shader_model = device_capabilities.shader_model;
@@ -52,7 +52,9 @@ impl<R: gfx::Resources> TextRenderer<R> {
         };
 
         let vertex_buffer = factory.create_buffer::<Vertex>(initial_buffer_size, gfx::BufferUsage::Dynamic);
-        let index_buffer = gfx::IndexBufferHandle::from_raw(factory.create_buffer_raw(initial_buffer_size * mem::size_of::<u32>(), gfx::BufferUsage::Dynamic));
+        let index_buffer = gfx::handle::IndexBuffer::from_raw(
+            factory.create_buffer_raw(initial_buffer_size * mem::size_of::<u32>(), gfx::BufferUsage::Dynamic)
+        );
 
         let sampler = factory.create_sampler(
            gfx::tex::SamplerInfo::new(
@@ -219,11 +221,15 @@ impl<R: gfx::Resources> TextRenderer<R> {
     ) {
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = gfx::BufferHandle::from_raw(grow_buffer::<R, F, Vertex>(factory, self.vertex_buffer.raw(), self.vertex_data.len()));
+            self.vertex_buffer = gfx::handle::Buffer::from_raw(
+                grow_buffer::<R, F, Vertex>(factory, self.vertex_buffer.raw(), self.vertex_data.len())
+            );
         }
 
         if self.index_data.len() > self.index_buffer.len() {
-            self.index_buffer = gfx::IndexBufferHandle::from_raw(grow_buffer::<R, F, u32>(factory, self.index_buffer.raw(), self.index_data.len()));
+            self.index_buffer = gfx::handle::IndexBuffer::from_raw(
+                grow_buffer::<R, F, u32>(factory, self.index_buffer.raw(), self.index_data.len())
+            );
         }
 
         factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
