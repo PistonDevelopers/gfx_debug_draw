@@ -1,8 +1,9 @@
+use std::marker::PhantomData;
+
 use gfx;
 use gfx::traits::*;
 
 use utils::{grow_buffer, MAT4_ID};
-use std::marker::PhantomData;
 
 pub struct LineRenderer<R: gfx::Resources> {
     program: gfx::handle::Program<R>,
@@ -47,8 +48,8 @@ impl<R: gfx::Resources> LineRenderer<R> {
             state: gfx::DrawState::new(),
             vertex_buffer: vertex_buffer,
             params: LineShaderParams {
-                u_model_view_proj: MAT4_ID,
-                _marker: PhantomData,
+                model_view_proj: MAT4_ID,
+                _r: PhantomData,
             },
         })
     }
@@ -85,7 +86,7 @@ impl<R: gfx::Resources> LineRenderer<R> {
         factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
 
 
-        self.params.u_model_view_proj = projection;
+        self.params.model_view_proj = projection;
 
         let mesh = gfx::Mesh::from_format(
             self.vertex_buffer.clone(),
@@ -108,26 +109,26 @@ b"
     #version 120
 
     uniform mat4 u_model_view_proj;
-    attribute vec3 position;
-    attribute vec4 color;
+    attribute vec3 at_position;
+    attribute vec4 at_color;
     varying vec4 v_color;
 
     void main() {
-        gl_Position = u_model_view_proj * vec4(position, 1.0);
-        v_color = color;
+        gl_Position = u_model_view_proj * vec4(at_position, 1.0);
+        v_color = at_color;
     }
 ",
 b"
     #version 150 core
 
     uniform mat4 u_model_view_proj;
-    in vec3 position;
-    in vec4 color;
+    in vec3 at_position;
+    in vec4 at_color;
     out vec4 v_color;
 
     void main() {
-        gl_Position = u_model_view_proj * vec4(position, 1.0);
-        v_color = color;
+        gl_Position = u_model_view_proj * vec4(at_position, 1.0);
+        v_color = at_color;
     }
 "];
 
@@ -152,17 +153,11 @@ b"
     }
 "];
 
-#[vertex_format]
-#[derive(Copy)]
-#[derive(Clone)]
-#[derive(Debug)]
-struct Vertex {
-    position: [f32; 3],
-    color: [f32; 4],
-}
+gfx_vertex!( Vertex {
+    at_position@ position: [f32; 3],
+    at_color@ color: [f32; 4],
+});
 
-#[shader_param]
-struct LineShaderParams<R: gfx::Resources> {
-    u_model_view_proj: [[f32; 4]; 4],
-    _marker: PhantomData<R>,
-}
+gfx_parameters!( LineShaderParams/Link {
+    u_model_view_proj@ model_view_proj: [[f32; 4]; 4],
+});

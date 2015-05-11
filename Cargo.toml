@@ -1,14 +1,11 @@
 [package]
 
 name = "gfx_debug_draw"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Steve Jahns <s.t.jahns@gmail.com>"]
 
 [dependencies.gfx]
 git = "https://github.com/gfx-rs/gfx-rs"
-
-[dependencies.gfx_macros]
-git = "https://github.com/gfx-rs/gfx_macros"
 
 [dependencies.piston-gfx_texture]
 git = "https://github.com/pistondevelopers/gfx_texture"
@@ -22,9 +19,6 @@ default-features = false
 features = ["png"]
 
 ###### For example ###########################
-
-[dev-dependencies]
-env_logger = "*"
 
 [dev-dependencies.vecmath]
 git = "https://github.com/PistonDevelopers/vecmath"

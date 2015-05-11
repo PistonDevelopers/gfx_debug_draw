@@ -5,7 +5,6 @@ extern crate sdl2_window;
 extern crate gfx;
 extern crate camera_controllers;
 extern crate vecmath;
-extern crate env_logger;
 extern crate gfx_debug_draw;
 extern crate gfx_device_gl;
 extern crate piston_window;
@@ -34,9 +33,6 @@ use camera_controllers::{
 };
 
 fn main() {
-
-    env_logger::init().unwrap();
-
     let (win_width, win_height) = (640, 480);
 
     let window = Rc::new(RefCell::new(Sdl2Window::new(

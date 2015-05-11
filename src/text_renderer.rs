@@ -1,4 +1,5 @@
 use std::default::Default;
+use std::marker::PhantomData;
 use std::mem;
 
 use gfx;
@@ -74,9 +75,10 @@ impl<R: gfx::Resources> TextRenderer<R> {
             vertex_buffer: vertex_buffer,
             index_buffer: index_buffer,
             params: TextShaderParams {
-                u_model_view_proj: MAT4_ID,
-                u_screen_size: [frame_size[0] as f32, frame_size[1] as f32],
-                u_tex_font: (font_texture, Some(sampler)),
+                model_view_proj: MAT4_ID,
+                screen_size: [frame_size[0] as f32, frame_size[1] as f32],
+                tex_font: (font_texture, Some(sampler)),
+                _r: PhantomData,
             },
         })
     }
@@ -107,7 +109,8 @@ impl<R: gfx::Resources> TextRenderer<R> {
         screen_relative: i32,
         color: [f32; 4],
     ) {
-        let [mut x, y] = screen_position;
+        let mut x = screen_position[0];
+        let y = screen_position[1];
 
         let scale_w = self.bitmap_font.scale_w as f32;
         let scale_h = self.bitmap_font.scale_h as f32;
@@ -235,11 +238,11 @@ impl<R: gfx::Resources> TextRenderer<R> {
         factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
         factory.update_buffer_raw(&self.index_buffer.raw(), gfx::as_byte_slice(&self.index_data[..]), 0);
 
-        self.params.u_screen_size = {
+        self.params.screen_size = {
             let (w, h) = output.get_size();
             [w as f32, h as f32]
         };
-        self.params.u_model_view_proj = projection;
+        self.params.model_view_proj = projection;
 
         let mesh = gfx::Mesh::from_format(
             self.vertex_buffer.clone(),
@@ -271,11 +274,11 @@ b"
     uniform mat4 u_model_view_proj;
     uniform sampler2D u_tex_font;
 
-    attribute vec2 position;
-    attribute vec4 world_position;
-    in int screen_relative;
-    attribute vec4 color;
-    attribute vec2 texcoords;
+    attribute vec2 at_position;
+    attribute vec4 at_world_position;
+    attribute int at_screen_relative;
+    attribute vec4 at_color;
+    attribute vec2 at_texcoords;
     varying vec4 v_color;
     varying vec2 v_TexCoord;
 
@@ -283,11 +286,11 @@ b"
 
         // on-screen offset from text origin
         vec2 screen_offset = vec2(
-            2 * position.x / u_screen_size.x - 1,
-            1 - 2 * position.y / u_screen_size.y
+            2 * at_position.x / u_screen_size.x - 1,
+            1 - 2 * at_position.y / u_screen_size.y
         );
 
-        vec4 screen_position = u_model_view_proj * world_position;
+        vec4 screen_position = u_model_view_proj * at_world_position;
 
         // perspective divide to get normalized device coords
         vec2 world_offset = vec2(
@@ -296,12 +299,12 @@ b"
         );
 
         // on-screen offset accounting for world_position
-        world_offset = screen_relative == 0 ? world_offset : vec2(0.0, 0.0);
+        world_offset = at_screen_relative == 0 ? world_offset : vec2(0.0, 0.0);
 
         gl_Position = vec4(world_offset + screen_offset, 0, 1.0);
 
-        v_TexCoord = texcoords;
-        v_color = color;
+        v_TexCoord = at_texcoords;
+        v_color = at_color;
 
     }
 ",
@@ -311,11 +314,11 @@ b"
     uniform vec2 u_screen_size;
     uniform mat4 u_model_view_proj;
 
-    in vec2 position;
-    in vec4 world_position;
-    in int screen_relative;
-    in vec4 color;
-    in vec2 texcoords;
+    in vec2 at_position;
+    in vec4 at_world_position;
+    in int at_screen_relative;
+    in vec4 at_color;
+    in vec2 at_texcoords;
     out vec4 v_color;
     out vec2 v_TexCoord;
 
@@ -323,11 +326,11 @@ b"
 
         // on-screen offset from text origin
         vec2 screen_offset = vec2(
-            2 * position.x / u_screen_size.x - 1,
-            1 - 2 * position.y / u_screen_size.y
+            2 * at_position.x / u_screen_size.x - 1,
+            1 - 2 * at_position.y / u_screen_size.y
         );
 
-        vec4 screen_position = u_model_view_proj * world_position;
+        vec4 screen_position = u_model_view_proj * at_world_position;
 
         // perspective divide to get normalized device coords
         vec2 world_offset = vec2(
@@ -336,12 +339,12 @@ b"
         );
 
         // on-screen offset accounting for world_position
-        world_offset = screen_relative == 0 ? world_offset : vec2(0.0, 0.0);
+        world_offset = at_screen_relative == 0 ? world_offset : vec2(0.0, 0.0);
 
         gl_Position = vec4(world_offset + screen_offset, 0, 1.0);
 
-        v_TexCoord = texcoords;
-        v_color = color;
+        v_TexCoord = at_texcoords;
+        v_color = at_color;
 
     }
 "];
@@ -375,21 +378,16 @@ b"
     }
 "];
 
-#[vertex_format]
-#[derive(Copy)]
-#[derive(Clone)]
-#[derive(Debug)]
-struct Vertex {
-    position: [f32; 2],
-    texcoords: [f32; 2],
-    world_position: [f32; 3],
-    screen_relative: i32,
-    color: [f32; 4],
-}
+gfx_vertex!( Vertex {
+    at_position@ position: [f32; 2],
+    at_texcoords@ texcoords: [f32; 2],
+    at_world_position@ world_position: [f32; 3],
+    at_screen_relative@ screen_relative: i32,
+    at_color@ color: [f32; 4],
+});
 
-#[shader_param]
-struct TextShaderParams<R: gfx::Resources> {
-    u_model_view_proj: [[f32; 4]; 4],
-    u_screen_size: [f32; 2],
-    u_tex_font: gfx::shade::TextureParam<R>,
-}
+gfx_parameters!( TextShaderParams/Link {
+    u_model_view_proj@ model_view_proj: [[f32; 4]; 4],
+    u_screen_size@ screen_size: [f32; 2],
+    u_tex_font@ tex_font: gfx::shade::TextureParam<R>,
+});
