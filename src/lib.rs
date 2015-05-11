@@ -1,8 +1,4 @@
-#![feature(plugin)]
-#![feature(custom_attribute)]
-#![feature(slice_patterns)]
-#![plugin(gfx_macros)]
-
+#[macro_use]
 extern crate gfx;
 extern crate gfx_texture;
 extern crate image;
