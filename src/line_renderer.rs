@@ -16,7 +16,6 @@ pub struct LineRenderer<R: gfx::Resources> {
 impl<R: gfx::Resources> LineRenderer<R> {
 
     pub fn new<F: gfx::Factory<R>>(
-        device_capabilities: gfx::device::Capabilities,
         factory: &mut F,
         initial_buffer_size: usize
     ) -> Result<LineRenderer<R>, gfx::ProgramError> {
@@ -33,9 +32,7 @@ impl<R: gfx::Resources> LineRenderer<R> {
             .. gfx::ShaderSource::empty()
         };
 
-        let program = match factory.link_program_source(
-            vertex, fragment, &device_capabilities
-        ){
+        let program = match factory.link_program_source2(vertex, fragment){
             Ok(program_handle) => program_handle,
             Err(e) => return Err(e),
         };
@@ -66,14 +63,12 @@ impl<R: gfx::Resources> LineRenderer<R> {
     /// Draw and clear the current batch of lines
     ///
     pub fn render<
-        C: gfx::CommandBuffer<R>,
+        S: gfx::Stream<R>,
         F: gfx::Factory<R>,
-        O: gfx::render::target::Output<R>,
     > (
         &mut self,
-        renderer: &mut gfx::Renderer<R, C>,
+        stream: &mut S,
         factory: &mut F,
-        output: &O,
         projection: [[f32; 4]; 4],
     ) {
 
@@ -95,9 +90,8 @@ impl<R: gfx::Resources> LineRenderer<R> {
 
         let slice = mesh.to_slice(gfx::PrimitiveType::Line);
 
-        renderer.draw(
-            &gfx::batch::bind(&self.state, &mesh, slice, &self.program, &self.params),
-            output
+        stream.draw(
+            &gfx::batch::bind(&self.state, &mesh, slice, &self.program, &self.params)
         ).unwrap();
 
         self.vertex_data.clear();
