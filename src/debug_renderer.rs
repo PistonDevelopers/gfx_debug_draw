@@ -38,26 +38,20 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         bitmap_font_texture: Option<gfx::handle::Texture<R>>,
     ) -> Result<DebugRenderer<R>, DebugRendererError> {
         let (w, h) = canvas.output.get_size();
-        DebugRenderer::new(&canvas.device, &mut canvas.factory,
+        DebugRenderer::new(&mut canvas.factory,
                            [w as u32, h as u32], initial_buffer_size,
                            bitmap_font, bitmap_font_texture)
     }
 
     pub fn new<
-        C: gfx::CommandBuffer<R>,
         F: Factory<R>,
-        D: Device<Resources = R, CommandBuffer = C>,
     > (
-        device: &D,
         factory: &mut F,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
         bitmap_font: Option<BitmapFont>,
         bitmap_font_texture: Option<gfx::handle::Texture<R>>,
     ) -> Result<DebugRenderer<R>, DebugRendererError> {
-
-        let device_capabilities = device.get_capabilities();
-
         let bitmap_font = match bitmap_font {
             Some(f) => f,
             None => BitmapFont::from_string(include_str!("../assets/notosans.fnt")).unwrap()
@@ -74,8 +68,8 @@ impl<R: gfx::Resources> DebugRenderer<R> {
             }
         };
 
-        let line_renderer = try!(LineRenderer::new(*device_capabilities, factory, initial_buffer_size));
-        let text_renderer = try!(TextRenderer::new(*device_capabilities, factory, frame_size, initial_buffer_size, bitmap_font, bitmap_font_texture));
+        let line_renderer = try!(LineRenderer::new(factory, initial_buffer_size));
+        let text_renderer = try!(TextRenderer::new(factory, frame_size, initial_buffer_size, bitmap_font, bitmap_font_texture));
 
         Ok(DebugRenderer {
             line_renderer: line_renderer,
@@ -115,21 +109,20 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         canvas: &mut gfx::Canvas<O, D, F>,
         projection: [[f32; 4]; 4],
     ) {
-        self.render(&mut canvas.renderer, &mut canvas.factory, &canvas.output, projection);
+        let mut stream = (&mut canvas.renderer, &canvas.output);
+        self.render(&mut stream, &mut canvas.factory, projection);
     }
 
     pub fn render<
-        C: gfx::CommandBuffer<R>,
+        S: gfx::Stream<R>,
         F: Factory<R>,
-        O: gfx::render::target::Output<R>,
     > (
         &mut self,
-        renderer: &mut gfx::Renderer<R, C>,
+        stream: &mut S,
         factory: &mut F,
-        output: &O,
         projection: [[f32; 4]; 4],
     ) {
-        self.line_renderer.render(renderer, factory, output, projection);
-        self.text_renderer.render(renderer, factory, output, projection);
+        self.line_renderer.render(stream, factory, projection);
+        self.text_renderer.render(stream, factory, projection);
     }
 }

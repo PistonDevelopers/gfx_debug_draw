@@ -22,7 +22,6 @@ pub struct TextRenderer<R: gfx::Resources> {
 impl<R: gfx::Resources> TextRenderer<R> {
 
     pub fn new<F: gfx::Factory<R>> (
-        device_capabilities: gfx::device::Capabilities,
         factory: &mut F,
         frame_size: [u32; 2],
         initial_buffer_size: usize,
@@ -42,9 +41,7 @@ impl<R: gfx::Resources> TextRenderer<R> {
             .. gfx::ShaderSource::empty()
         };
 
-        let program = match factory.link_program_source(
-            vertex, fragment, &device_capabilities
-        ) {
+        let program = match factory.link_program_source2(vertex, fragment) {
             Ok(program_handle) => program_handle,
             Err(e) => return Err(e),
         };
@@ -209,14 +206,12 @@ impl<R: gfx::Resources> TextRenderer<R> {
     /// Draw and clear the current batch of text.
     ///
     pub fn render<
-        C: gfx::CommandBuffer<R>,
+        S: gfx::Stream<R>,
         F: gfx::Factory<R>,
-        O: gfx::render::target::Output<R>,
     > (
         &mut self,
-        renderer: &mut gfx::Renderer<R, C>,
+        stream: &mut S,
         factory: &mut F,
-        output: &O,
         projection: [[f32; 4]; 4],
     ) {
 
@@ -236,7 +231,7 @@ impl<R: gfx::Resources> TextRenderer<R> {
         factory.update_buffer_raw(&self.index_buffer.raw(), gfx::as_byte_slice(&self.index_data[..]), 0);
 
         self.params.screen_size = {
-            let (w, h) = output.get_size();
+            let (w, h) = stream.get_output().get_size();
             [w as f32, h as f32]
         };
         self.params.model_view_proj = projection;
@@ -253,9 +248,8 @@ impl<R: gfx::Resources> TextRenderer<R> {
             kind: gfx::SliceKind::Index32(self.index_buffer.clone(), 0),
         };
 
-        renderer.draw(
-            &gfx::batch::bind(&self.state, &mesh, slice, &self.program, &self.params),
-            output
+        stream.draw(
+            &gfx::batch::bind(&self.state, &mesh, slice, &self.program, &self.params)
         ).unwrap();
 
         self.vertex_data.clear();
