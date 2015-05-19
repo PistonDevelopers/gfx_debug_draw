@@ -10,29 +10,9 @@ Library for batched renderering of lines and text in 3D space, using [gfx-rs](ht
 // Initializing...
 
 let mut debug_renderer = DebugRenderer::new(
-	&device, // gfx::Device
-	&mut factory // gfx::Factory
-	[viewport_width, viewport_height], // width, height of the SDL or GLFW frame/viewport
+	factory // a gfx::Factory, to be owned by DebugRenderer
 	64, // Initial size of vertex buffers
-	None, // Optional BitmapFont, pass None for default built-in library font
-	None, // Optional texture for BitmapFont, pass None for default built-in library font
 ).ok().unwrap();
-
-// Alternatively, if you have a gfx::Canvas:
-
-let mut debug_renderer = DebugRenderer::from_canvas(
-	&mut canvas, // gfx::Canvas
-	[viewport_width, viewport_height], // width, height of the SDL or GLFW frame/viewport
-	64, // Initial size of vertex buffers
-	None, // Optional BitmapFont, pass None for default built-in library font
-	None, // Optional texture for BitmapFont, pass None for default built-in library font
-).ok().unwrap();
-
-...
-
-// On viewport resized ...
-
-debug_renderer.resize(viewport_width, viewport_height);
 
 ...
 
@@ -60,22 +40,10 @@ debug_renderer.draw_text_on_screen(
 );
 
 // Render the final batch of all lines and text currently present in the vertex/index buffers
+
 debug_renderer.render(
-	&mut renderer, // gfx::Renderer
-	&mut factory, // gfx::Factory
-	&output, // gfx::Output
-	camera_projection, // Current camera projection matrix
-);
-
-// Alternatively, if you're using gfx::Canvas,
-
-debug_renderer.render_canvas(
-	canvas, // &mut gfx::Canvas
+	stream, // &mut gfx::Stream
 	camera_projection, // Current camera projection matrix
 );
 
 ```
-
-## Licenses of included assets
-
-Default bitmap font was generated from [Google Noto](https://www.google.com/get/noto/) - [Apache2 License](https://github.com/PistonDevelopers/gfx-debug-draw/blob/master/assets/LICENSE-2.0.txt)
