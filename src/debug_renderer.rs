@@ -1,6 +1,5 @@
 use bitmap_font::BitmapFont;
 use line_renderer::LineRenderer;
-use text_renderer::TextRenderer;
 
 use gfx;
 use gfx::traits::*;
@@ -21,37 +20,21 @@ impl From<gfx::ProgramError> for DebugRendererError {
 
 pub struct DebugRenderer<R: gfx::Resources> {
     line_renderer: LineRenderer<R>,
-    text_renderer: TextRenderer<R>,
+    // text_renderer: TextRenderer<R>,
 }
 
 impl<R: gfx::Resources> DebugRenderer<R> {
 
-    pub fn from_canvas<
-        C: gfx::CommandBuffer<R>,
-        F: Factory<R>,
-        O: gfx::render::target::Output<R>,
-        D: Device<Resources = R, CommandBuffer = C>,
-    > (
-        canvas: &mut gfx::Canvas<O, D, F>,
-        initial_buffer_size: usize,
-        bitmap_font: Option<BitmapFont>,
-        bitmap_font_texture: Option<gfx::handle::Texture<R>>,
-    ) -> Result<DebugRenderer<R>, DebugRendererError> {
-        let (w, h) = canvas.output.get_size();
-        DebugRenderer::new(&mut canvas.factory,
-                           [w as u32, h as u32], initial_buffer_size,
-                           bitmap_font, bitmap_font_texture)
-    }
-
-    pub fn new<
-        F: Factory<R>,
-    > (
+    pub fn new<F: Factory<R>, S: Stream<R>> (
         factory: &mut F,
-        frame_size: [u32; 2],
+        stream: &mut S,
         initial_buffer_size: usize,
         bitmap_font: Option<BitmapFont>,
         bitmap_font_texture: Option<gfx::handle::Texture<R>>,
     ) -> Result<DebugRenderer<R>, DebugRendererError> {
+
+        let (w, h) = stream.get_output().get_size();
+
         let bitmap_font = match bitmap_font {
             Some(f) => f,
             None => BitmapFont::from_string(include_str!("../assets/notosans.fnt")).unwrap()
@@ -69,11 +52,12 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         };
 
         let line_renderer = try!(LineRenderer::new(factory, initial_buffer_size));
-        let text_renderer = try!(TextRenderer::new(factory, frame_size, initial_buffer_size, bitmap_font, bitmap_font_texture));
+
+        // let text_renderer = try!(TextRenderer::new(factory, frame_size, initial_buffer_size, bitmap_font, bitmap_font_texture));
 
         Ok(DebugRenderer {
             line_renderer: line_renderer,
-            text_renderer: text_renderer,
+            // text_renderer: text_renderer,
         })
     }
 
@@ -87,7 +71,7 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         screen_position: [i32; 2],
         color: [f32; 4],
     ) {
-        self.text_renderer.draw_text_on_screen(text, screen_position, color);
+        // self.text_renderer.draw_text_on_screen(text, screen_position, color);
     }
 
     pub fn draw_text_at_position (
@@ -96,33 +80,16 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         world_position: [f32; 3],
         color: [f32; 4],
     ) {
-        self.text_renderer.draw_text_at_position(text, world_position, color);
+        // self.text_renderer.draw_text_at_position(text, world_position, color);
     }
 
-    pub fn render_canvas<
-        C: gfx::CommandBuffer<R>,
-        F: Factory<R>,
-        O: gfx::render::target::Output<R>,
-        D: Device<Resources = R, CommandBuffer = C>,
-    > (
-        &mut self,
-        canvas: &mut gfx::Canvas<O, D, F>,
-        projection: [[f32; 4]; 4],
-    ) {
-        let mut stream = (&mut canvas.renderer, &canvas.output);
-        self.render(&mut stream, &mut canvas.factory, projection);
-    }
-
-    pub fn render<
-        S: gfx::Stream<R>,
-        F: Factory<R>,
-    > (
+    pub fn render<S: gfx::Stream<R>, F: Factory<R>> (
         &mut self,
         stream: &mut S,
         factory: &mut F,
         projection: [[f32; 4]; 4],
     ) {
         self.line_renderer.render(stream, factory, projection);
-        self.text_renderer.render(stream, factory, projection);
+        // self.text_renderer.render(stream, factory, projection);
     }
 }

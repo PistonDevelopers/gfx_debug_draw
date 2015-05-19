@@ -32,7 +32,10 @@ use camera_controllers::{
     model_view_projection
 };
 
+use gfx::traits::Stream;
+
 fn main() {
+
     let (win_width, win_height) = (640, 480);
 
     let window = Rc::new(RefCell::new(Sdl2Window::new(
@@ -44,9 +47,12 @@ fn main() {
     )));
 
     let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
+    let mut factory = piston_window.device.borrow_mut().spawn_factory();
+    let stream = piston_window.stream.clone();
 
-    let mut debug_renderer = DebugRenderer::from_canvas(
-        &mut piston_window.canvas.borrow_mut(),
+    let mut debug_renderer = DebugRenderer::new(
+        &mut factory,
+        &mut *(stream.borrow_mut()),
         64,
         None,
         None,
@@ -81,12 +87,10 @@ fn main() {
 
         orbit_zoom_camera.event(&e);
 
-        e.draw_3d(|canvas| {
-            use gfx::Stream;
-
+        e.draw_3d(|stream| {
             let args = e.render_args().unwrap();
 
-            canvas.clear(gfx::ClearData {
+            stream.clear(gfx::ClearData {
                 color: [0.3, 0.3, 0.3, 1.0],
                 depth: 1.0,
                 stencil: 0,
@@ -121,7 +125,7 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            debug_renderer.render_canvas(canvas, camera_projection);
+            debug_renderer.render(stream, &mut factory, camera_projection);
         });
     }
 }
