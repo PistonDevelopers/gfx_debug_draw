@@ -62,22 +62,18 @@ impl<R: gfx::Resources> LineRenderer<R> {
     ///
     /// Draw and clear the current batch of lines
     ///
-    pub fn render<
-        S: gfx::Stream<R>,
-        F: gfx::Factory<R>,
-    > (
+    pub fn render<S: gfx::Stream<R>, F: gfx::Factory<R>> (
         &mut self,
         stream: &mut S,
         factory: &mut F,
         projection: [[f32; 4]; 4],
-    ) {
+    ) -> Result<(), gfx::device::BufferUpdateError> {
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
             self.vertex_buffer = grow_buffer(factory, &self.vertex_buffer, gfx::BufferRole::Vertex, self.vertex_data.len());
         }
 
-        factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
-
+        try!(factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0));
 
         self.params.model_view_proj = projection;
 
@@ -93,6 +89,8 @@ impl<R: gfx::Resources> LineRenderer<R> {
         ).unwrap();
 
         self.vertex_data.clear();
+
+        Ok(())
     }
 }
 

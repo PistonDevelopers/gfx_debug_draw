@@ -47,9 +47,9 @@ fn main() {
     )));
 
     let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
-    let mut factory = piston_window.device.borrow_mut().spawn_factory();
 
-    let mut debug_renderer = DebugRenderer::new(&mut factory, 64).ok().unwrap();
+    let factory = piston_window.device.borrow_mut().spawn_factory();
+    let mut debug_renderer = DebugRenderer::new(factory, 64).ok().unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -118,7 +118,9 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            debug_renderer.render(stream, &mut factory, camera_projection);
+            if let Err(e) = debug_renderer.render(stream, camera_projection) {
+                println!("{:?}", e);
+            }
         });
     }
 }

@@ -7,7 +7,8 @@ use gfx_text;
 #[derive(Debug)]
 pub enum DebugRendererError {
     ShaderProgramError(gfx::ProgramError),
-    BitmapFontTextureError,
+    BufferUpdateError(gfx::device::BufferUpdateError),
+    GfxTextError(gfx_text::Error)
 }
 
 impl From<gfx::ProgramError> for DebugRendererError {
@@ -16,24 +17,39 @@ impl From<gfx::ProgramError> for DebugRendererError {
     }
 }
 
-pub struct DebugRenderer<R: gfx::Resources> {
-    line_renderer: LineRenderer<R>,
-    text_renderer: gfx_text::Renderer<R>,
+impl From<gfx::device::BufferUpdateError> for DebugRendererError {
+    fn from(err: gfx::device::BufferUpdateError) -> DebugRendererError {
+        DebugRendererError::BufferUpdateError(err)
+    }
 }
 
-impl<R: gfx::Resources> DebugRenderer<R> {
+impl From<gfx_text::Error> for DebugRendererError {
+    fn from(err: gfx_text::Error) -> DebugRendererError {
+        DebugRendererError::GfxTextError(err)
+    }
+}
 
-    pub fn new<F: Factory<R>> (
-        factory: &mut F,
+pub struct DebugRenderer<R: gfx::Resources, F: Factory<R>> {
+    line_renderer: LineRenderer<R>,
+    text_renderer: gfx_text::Renderer<R>,
+    factory: F,
+}
+
+impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
+
+    pub fn new (
+        factory: F,
         initial_buffer_size: usize,
-    ) -> Result<DebugRenderer<R>, DebugRendererError> {
+    ) -> Result<DebugRenderer<R, F>, DebugRendererError> {
 
-        let line_renderer = try!(LineRenderer::new(factory, initial_buffer_size));
-        let text_renderer = gfx_text::new(factory).unwrap();
+        let mut factory = factory;
+        let line_renderer = try!(LineRenderer::new(&mut factory, initial_buffer_size));
+        let text_renderer = gfx_text::new(&mut factory).unwrap();
 
         Ok(DebugRenderer {
             line_renderer: line_renderer,
             text_renderer: text_renderer,
+            factory: factory,
         })
     }
 
@@ -59,13 +75,13 @@ impl<R: gfx::Resources> DebugRenderer<R> {
         self.text_renderer.draw_at(text, world_position, color);
     }
 
-    pub fn render<S: gfx::Stream<R>, F: Factory<R>> (
+    pub fn render<S: gfx::Stream<R>> (
         &mut self,
         stream: &mut S,
-        factory: &mut F,
         projection: [[f32; 4]; 4],
-    ) {
-        self.line_renderer.render(stream, factory, projection);
-        self.text_renderer.draw_end_at(factory, stream, projection);
+    ) -> Result<(), DebugRendererError> {
+        try!(self.line_renderer.render(stream, &mut self.factory, projection));
+        try!(self.text_renderer.draw_end_at(&mut self.factory, stream, projection));
+        Ok(())
     }
 }
