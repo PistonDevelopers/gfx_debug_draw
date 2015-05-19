@@ -48,15 +48,8 @@ fn main() {
 
     let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
     let mut factory = piston_window.device.borrow_mut().spawn_factory();
-    let stream = piston_window.stream.clone();
 
-    let mut debug_renderer = DebugRenderer::new(
-        &mut factory,
-        &mut *(stream.borrow_mut()),
-        64,
-        None,
-        None,
-    ).ok().unwrap();
+    let mut debug_renderer = DebugRenderer::new(&mut factory, 64).ok().unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {

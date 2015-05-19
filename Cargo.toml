@@ -7,16 +7,8 @@ authors = ["Steve Jahns <s.t.jahns@gmail.com>"]
 [dependencies.gfx]
 git = "https://github.com/gfx-rs/gfx-rs"
 
-[dependencies.piston-gfx_texture]
-git = "https://github.com/pistondevelopers/gfx_texture"
-
-[dependencies.RustyXML]
-git = "https://github.com/Florob/RustyXML"
-
-[dependencies.image]
-git = "https://github.com/PistonDevelopers/image"
-default-features = false
-features = ["png"]
+[dependencies.gfx_text]
+git = "https://github.com/PistonDevelopers/gfx_text"
 
 ###### For example ###########################
 
