@@ -32,12 +32,12 @@ impl<R: gfx::Resources> LineRenderer<R> {
             .. gfx::ShaderSource::empty()
         };
 
-        let program = match factory.link_program_source2(vertex, fragment){
+        let program = match factory.link_program_source(vertex, fragment){
             Ok(program_handle) => program_handle,
             Err(e) => return Err(e),
         };
 
-        let vertex_buffer = factory.create_buffer::<Vertex>(initial_buffer_size, gfx::BufferUsage::Dynamic);
+        let vertex_buffer = factory.create_buffer_dynamic(initial_buffer_size, gfx::BufferRole::Vertex);
 
         Ok(LineRenderer {
             vertex_data: Vec::new(),
@@ -62,24 +62,18 @@ impl<R: gfx::Resources> LineRenderer<R> {
     ///
     /// Draw and clear the current batch of lines
     ///
-    pub fn render<
-        S: gfx::Stream<R>,
-        F: gfx::Factory<R>,
-    > (
+    pub fn render<S: gfx::Stream<R>, F: gfx::Factory<R>> (
         &mut self,
         stream: &mut S,
         factory: &mut F,
         projection: [[f32; 4]; 4],
-    ) {
+    ) -> Result<(), gfx::device::BufferUpdateError> {
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = gfx::handle::Buffer::from_raw(
-                grow_buffer::<R, F, Vertex>(factory, &self.vertex_buffer.raw(), self.vertex_data.len())
-            );
+            self.vertex_buffer = grow_buffer(factory, &self.vertex_buffer, gfx::BufferRole::Vertex, self.vertex_data.len());
         }
 
-        factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0);
-
+        try!(factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0));
 
         self.params.model_view_proj = projection;
 
@@ -95,6 +89,8 @@ impl<R: gfx::Resources> LineRenderer<R> {
         ).unwrap();
 
         self.vertex_data.clear();
+
+        Ok(())
     }
 }
 
@@ -152,6 +148,6 @@ gfx_vertex!( Vertex {
     at_color@ color: [f32; 4],
 });
 
-gfx_parameters!( LineShaderParams/Link {
+gfx_parameters!( LineShaderParams {
     u_model_view_proj@ model_view_proj: [[f32; 4]; 4],
 });
