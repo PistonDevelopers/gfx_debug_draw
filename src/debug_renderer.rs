@@ -31,7 +31,7 @@ impl From<gfx_text::Error> for DebugRendererError {
 
 pub struct DebugRenderer<R: gfx::Resources, F: Factory<R>> {
     line_renderer: LineRenderer<R>,
-    text_renderer: gfx_text::Renderer<R>,
+    text_renderer: gfx_text::Renderer<R, F>,
     factory: F,
 }
 
@@ -39,12 +39,12 @@ impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
 
     pub fn new (
         factory: F,
+        text_renderer: gfx_text::Renderer<R, F>,
         initial_buffer_size: usize,
     ) -> Result<DebugRenderer<R, F>, DebugRendererError> {
 
         let mut factory = factory;
         let line_renderer = try!(LineRenderer::new(&mut factory, initial_buffer_size));
-        let text_renderer = gfx_text::new(&mut factory).unwrap();
 
         Ok(DebugRenderer {
             line_renderer: line_renderer,
@@ -81,7 +81,7 @@ impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
         projection: [[f32; 4]; 4],
     ) -> Result<(), DebugRendererError> {
         try!(self.line_renderer.render(stream, &mut self.factory, projection));
-        try!(self.text_renderer.draw_end_at(&mut self.factory, stream, projection));
+        try!(self.text_renderer.draw_end_at(stream, projection));
         Ok(())
     }
 }
