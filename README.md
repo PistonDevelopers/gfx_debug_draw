@@ -9,8 +9,15 @@ Library for batched renderering of lines and text in 3D space, using [gfx-rs](ht
 ```rust
 // Initializing...
 
+// Create gfx_text::Renderer to be used by the DebugRenderer
+let text_renderer = {
+    let factory = piston_window.device.borrow_mut().spawn_factory(); // gfx::Factory
+    gfx_text::new(factory).unwrap() // can optionally configure text renderer here (font, color)
+};
+
 let mut debug_renderer = DebugRenderer::new(
-	factory // a gfx::Factory, to be owned by DebugRenderer
+    piston_window.device.borrow_mut().spawn_factory(), // gfx::Factory
+    text_renderer,
 	64, // Initial size of vertex buffers
 ).ok().unwrap();
 
