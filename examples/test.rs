@@ -3,6 +3,7 @@ extern crate shader_version;
 extern crate sdl2;
 extern crate sdl2_window;
 extern crate gfx;
+extern crate gfx_text;
 extern crate camera_controllers;
 extern crate vecmath;
 extern crate gfx_debug_draw;
@@ -48,8 +49,16 @@ fn main() {
 
     let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
-    let factory = piston_window.device.borrow_mut().spawn_factory();
-    let mut debug_renderer = DebugRenderer::new(factory, 64).ok().unwrap();
+    let mut debug_renderer = {
+        let factory = piston_window.device.borrow_mut().spawn_factory();
+
+        let text_renderer = {
+            let factory = piston_window.device.borrow_mut().spawn_factory();
+            gfx_text::new(factory).unwrap()
+        };
+
+        DebugRenderer::new(factory, text_renderer, 64).ok().unwrap()
+    };
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
