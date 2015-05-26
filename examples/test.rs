@@ -127,6 +127,18 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
+            debug_renderer.draw_marker(
+                [5.0, 5.0, 5.0],
+                1.0,
+                [0.0, 0.0, 1.0, 1.0],
+            );
+
+            // Alternate usage:
+            gfx_debug_draw::draw_line([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]);
+            gfx_debug_draw::draw_text_on_screen("Stuff", [10, 10], [0.0, 0.0, 1.0, 1.0]);
+            gfx_debug_draw::draw_text_at_position("Things", [2.0, 2.0, 2.0], [1.0, 1.0, 1.0, 1.0]);
+            gfx_debug_draw::draw_marker([-2.0, -2.0, -2.0], 0.5, [1.0, 1.0, 0.0, 1.0]);
+
             if let Err(e) = debug_renderer.render(stream, camera_projection) {
                 println!("{:?}", e);
             }

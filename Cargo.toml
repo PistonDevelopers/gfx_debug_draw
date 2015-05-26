@@ -10,10 +10,10 @@ git = "https://github.com/gfx-rs/gfx-rs"
 [dependencies.gfx_text]
 git = "https://github.com/PistonDevelopers/gfx_text"
 
-###### For example ###########################
-
-[dev-dependencies.vecmath]
+[dependencies.vecmath]
 git = "https://github.com/PistonDevelopers/vecmath"
+
+###### For example ###########################
 
 [dev-dependencies.piston]
 git = "https://github.com/PistonDevelopers/piston"
