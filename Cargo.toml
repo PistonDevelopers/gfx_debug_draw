@@ -4,36 +4,20 @@ name = "gfx_debug_draw"
 version = "0.2.0"
 authors = ["Steve Jahns <s.t.jahns@gmail.com>"]
 
-[dependencies.gfx]
-git = "https://github.com/gfx-rs/gfx-rs"
-
-[dependencies.gfx_text]
-git = "https://github.com/PistonDevelopers/gfx_text"
-
-[dependencies.vecmath]
-git = "https://github.com/PistonDevelopers/vecmath"
+[dependencies]
+gfx = "0.6.*"
+gfx_text = "0.2.*"
+vecmath = "*"
 
 ###### For example ###########################
 
-[dev-dependencies.piston]
-git = "https://github.com/PistonDevelopers/piston"
-
-[dev-dependencies.shader_version]
-git = "https://github.com/PistonDevelopers/shader_version"
-
-[dev-dependencies.camera_controllers]
-git = "https://github.com/pistondevelopers/camera_controllers"
-
-[dev-dependencies.sdl2]
-git = "https://github.com/AngryLawyer/rust-sdl2"
-
-[dev-dependencies.pistoncore-sdl2_window]
-git = "https://github.com/PistonDevelopers/sdl2_window"
-
-[dev-dependencies.gfx_device_gl]
-git = "https://github.com/gfx-rs/gfx_device_gl"
-
-[dev-dependencies.piston_window]
-git = "https://github.com/pistondevelopers/piston_window"
+[dev-dependencies]
+piston = "0.1.*"
+piston_window = "0.0.*"
+sdl2 = "0.4.*"
+pistoncore-sdl2_window = "0.0.*"
+gfx_device_gl = "0.4.*"
+shader_version = "0.0.*"
+camera_controllers = "0.0.*"
 
 ###############################################
