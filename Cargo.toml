@@ -1,10 +1,22 @@
 [package]
 
 name = "gfx_debug_draw"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Steve Jahns <s.t.jahns@gmail.com>"]
+keywords = ["draw", "gfx", "debug"]
+description = "Debug rendering library for gfx-rs"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/PistonDevelopers/gfx_debug_draw"
+homepage = "https://github.com/PistonDevelopers/gfx_debug_draw"
+
+[lib]
+
+name = "gfx_debug_draw"
+path = "src/lib.rs"
 
 [dependencies]
+
 gfx = "0.6.*"
 gfx_text = "0.2.*"
 vecmath = "*"
@@ -12,6 +24,7 @@ vecmath = "*"
 ###### For example ###########################
 
 [dev-dependencies]
+
 piston = "0.1.*"
 piston_window = "0.0.*"
 sdl2 = "0.4.*"
