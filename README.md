@@ -46,6 +46,13 @@ debug_renderer.draw_text_on_screen(
 	[1.0, 0.4, 0.4, 0.7] // Text color
 );
 
+// Draw a yellow position marker
+debug_renderer.draw_marker(
+    [1.0, 2.0, 3.0],  // Position
+    0.5, // Size
+    [1.0, 1.0, 0.0, 1.0] // Color
+);
+
 // Render the final batch of all lines and text currently present in the vertex/index buffers
 
 debug_renderer.render(
@@ -53,4 +60,17 @@ debug_renderer.render(
 	camera_projection, // Current camera projection matrix
 );
 
+```
+
+Draw commands can also be queued up with static methods, which is useful when you want to debug
+something in a context where you have no access to the DebugRenderer instance.
+
+```rust
+fn foobar() {
+   ...
+   let x: Vector3<f32> = some_expression;
+   // Visually debug the value of `x` with a red position marker:
+   gfx_debug_draw::draw_marker(x, 1.0, [1.0, 0.0, 0.0, 1.0]);
+   ...
+}
 ```

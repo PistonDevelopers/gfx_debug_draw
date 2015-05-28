@@ -50,14 +50,10 @@ fn main() {
     let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
     let mut debug_renderer = {
-        let factory = piston_window.device.borrow_mut().spawn_factory();
-
         let text_renderer = {
-            let factory = piston_window.device.borrow_mut().spawn_factory();
-            gfx_text::new(factory).unwrap()
+            gfx_text::new(piston_window.factory.borrow().clone()).unwrap()
         };
-
-        DebugRenderer::new(factory, text_renderer, 64).ok().unwrap()
+        DebugRenderer::new(piston_window.factory.borrow().clone(), text_renderer, 64).ok().unwrap()
     };
 
     let model = mat4_id();
@@ -126,6 +122,18 @@ fn main() {
                 [0.0, 0.0, 6.0],
                 [0.0, 0.0, 1.0, 1.0],
             );
+
+            debug_renderer.draw_marker(
+                [5.0, 5.0, 5.0],
+                1.0,
+                [0.0, 0.0, 1.0, 1.0],
+            );
+
+            // Alternate usage:
+            gfx_debug_draw::draw_line([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]);
+            gfx_debug_draw::draw_text_on_screen("Stuff", [10, 10], [0.0, 0.0, 1.0, 1.0]);
+            gfx_debug_draw::draw_text_at_position("Things", [2.0, 2.0, 2.0], [1.0, 1.0, 1.0, 1.0]);
+            gfx_debug_draw::draw_marker([-2.0, -2.0, -2.0], 0.5, [1.0, 1.0, 0.0, 1.0]);
 
             if let Err(e) = debug_renderer.render(stream, camera_projection) {
                 println!("{:?}", e);
