@@ -7,8 +7,8 @@ keywords = ["draw", "gfx", "debug"]
 description = "Debug rendering library for gfx-rs"
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/PistonDevelopers/gfx_debug_draw"
-homepage = "https://github.com/PistonDevelopers/gfx_debug_draw"
+repository = "https://github.com/PistonDevelopers/gfx-debug-draw"
+homepage = "https://github.com/PistonDevelopers/gfx-debug-draw"
 
 [lib]
 
