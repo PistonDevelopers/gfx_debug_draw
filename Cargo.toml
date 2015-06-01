@@ -18,7 +18,7 @@ path = "src/lib.rs"
 [dependencies]
 
 gfx = "0.6.*"
-gfx_text = "0.2.*"
+gfx_text = "^0.3.1"
 vecmath = "*"
 
 ###### For example ###########################
