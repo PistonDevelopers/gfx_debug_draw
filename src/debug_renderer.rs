@@ -164,7 +164,7 @@ impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
         screen_position: [i32; 2],
         color: [f32; 4],
     ) {
-        self.text_renderer.draw(text, screen_position, color);
+        self.text_renderer.add(text, screen_position, color);
     }
 
     pub fn draw_text_at_position (
@@ -173,7 +173,7 @@ impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
         world_position: [f32; 3],
         color: [f32; 4],
     ) {
-        self.text_renderer.draw_at(text, world_position, color);
+        self.text_renderer.add_at(text, world_position, color);
     }
 
     pub fn render<S: gfx::Stream<R>> (
@@ -201,7 +201,7 @@ impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
         }
 
         try!(self.line_renderer.render(stream, &mut self.factory, projection));
-        try!(self.text_renderer.draw_end_at(stream, projection));
+        try!(self.text_renderer.draw_at(stream, projection));
         Ok(())
     }
 }

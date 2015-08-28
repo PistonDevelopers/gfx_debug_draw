@@ -17,7 +17,7 @@ use std::rc::Rc;
 
 use piston::window::WindowSettings;
 
-use piston::event::{
+use piston::input::{
     RenderEvent,
     ResizeEvent,
 };
@@ -39,13 +39,14 @@ fn main() {
 
     let (win_width, win_height) = (640, 480);
 
-    let window = Rc::new(RefCell::new(Sdl2Window::new(
-        shader_version::OpenGL::_3_2,
-        WindowSettings::new(
+    let window: Sdl2Window = WindowSettings::new(
             "Debug Render Test".to_string(),
             piston::window::Size { width: 640, height: 480 },
         ).exit_on_esc(true)
-    )));
+         .opengl(shader_version::OpenGL::V3_2)
+         .build()
+         .unwrap();
+    let window = Rc::new(RefCell::new(window));
 
     let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
