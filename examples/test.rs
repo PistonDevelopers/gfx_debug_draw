@@ -9,6 +9,7 @@ extern crate vecmath;
 extern crate gfx_debug_draw;
 extern crate gfx_device_gl;
 extern crate piston_window;
+extern crate current;
 
 use gfx_debug_draw::DebugRenderer;
 
@@ -34,6 +35,8 @@ use camera_controllers::{
 };
 
 use gfx::traits::Stream;
+
+use current::{Current, CurrentGuard};
 
 fn main() {
 
@@ -130,14 +133,28 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            debug_renderer.draw_line([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]);
-            debug_renderer.draw_text_on_screen("Stuff", [10, 10], [0.0, 0.0, 1.0, 1.0]);
-            debug_renderer.draw_text_at_position("Things", [2.0, 2.0, 2.0], [1.0, 1.0, 1.0, 1.0]);
-            debug_renderer.draw_marker([-2.0, -2.0, -2.0], 0.5, [1.0, 1.0, 0.0, 1.0]);
+            {
+                let guard = CurrentGuard::new(&mut debug_renderer);
+                draw_stuff();
+                drop(guard);
+            }
 
             if let Err(e) = debug_renderer.render(stream, camera_projection) {
                 println!("{:?}", e);
             }
         });
     }
+}
+
+// To access the current debug renderer we need a concrete type.
+type GlDebugRenderer = DebugRenderer<gfx_device_gl::Resources,
+                                     gfx_device_gl::Factory>;
+
+fn draw_stuff() {
+    let debug_renderer = unsafe { &mut *Current::<GlDebugRenderer>::new() };
+
+    debug_renderer.draw_line([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]);
+    debug_renderer.draw_text_on_screen("Stuff", [10, 10], [0.0, 0.0, 1.0, 1.0]);
+    debug_renderer.draw_text_at_position("Things", [2.0, 2.0, 2.0], [1.0, 1.0, 1.0, 1.0]);
+    debug_renderer.draw_marker([-2.0, -2.0, -2.0], 0.5, [1.0, 1.0, 0.0, 1.0]);
 }
