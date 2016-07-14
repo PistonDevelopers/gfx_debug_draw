@@ -34,13 +34,7 @@ impl<R: gfx::Resources> LineRenderer<R> {
         */
 
         let set = factory.create_shader_set(&VERTEX_SRC[1], &FRAGMENT_SRC[1]).unwrap();
-        let mut rasterizer = gfx::state::Rasterizer {
-            front_face: gfx::state::FrontFace::CounterClockwise,
-            cull_face: gfx::state::CullFace::Nothing,
-            method: gfx::state::RasterMethod::Line(1),
-            offset: None,
-            samples: None,
-        };
+        let rasterizer = gfx::state::Rasterizer::new_fill();
         let pso = try!(factory.create_pipeline_state(
             &set, gfx::Primitive::LineList, rasterizer, pipe::new()
         ));
