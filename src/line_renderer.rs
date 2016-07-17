@@ -1,16 +1,17 @@
-use std::marker::PhantomData;
-
 use gfx;
+use gfx::handle::{DepthStencilView, RenderTargetView};
 use gfx::traits::*;
+use gfx::PipelineState;
+use std::collections::hash_map::{Entry, HashMap};
 
-use utils::{grow_buffer, MAT4_ID};
+use utils::grow_buffer;
+use DebugRendererError;
 
 pub struct LineRenderer<R: gfx::Resources> {
-    program: gfx::handle::Program<R>,
-    state: gfx::DrawState,
     vertex_data: Vec<Vertex>,
     vertex_buffer: gfx::handle::Buffer<R, Vertex>,
-    params: LineShaderParams<R>,
+    pso_map: HashMap<gfx::format::Format, PipelineState<R, pipe::Meta>>,
+    shaders: gfx::ShaderSet<R>,
 }
 
 impl<R: gfx::Resources> LineRenderer<R> {
@@ -18,36 +19,52 @@ impl<R: gfx::Resources> LineRenderer<R> {
     pub fn new<F: gfx::Factory<R>>(
         factory: &mut F,
         initial_buffer_size: usize
-    ) -> Result<LineRenderer<R>, gfx::ProgramError> {
+    ) -> LineRenderer<R> {
 
+        /* TODO: Update
         let vertex = gfx::ShaderSource {
             glsl_120: Some(VERTEX_SRC[0]),
             glsl_150: Some(VERTEX_SRC[1]),
             .. gfx::ShaderSource::empty()
         };
+        */
 
+        /* TODO: Update
         let fragment = gfx::ShaderSource {
             glsl_120: Some(FRAGMENT_SRC[0]),
             glsl_150: Some(FRAGMENT_SRC[1]),
             .. gfx::ShaderSource::empty()
         };
+        */
 
-        let program = match factory.link_program_source(vertex, fragment){
-            Ok(program_handle) => program_handle,
-            Err(e) => return Err(e),
-        };
+        let set = factory.create_shader_set(&VERTEX_SRC[1], &FRAGMENT_SRC[1]).unwrap();
+        let vertex_buffer = factory.create_buffer_dynamic(
+            initial_buffer_size, gfx::BufferRole::Vertex, gfx::Bind::empty()
+        ).expect("Could not create vertex buffer");
 
-        let vertex_buffer = factory.create_buffer_dynamic(initial_buffer_size, gfx::BufferRole::Vertex);
-
-        Ok(LineRenderer {
+        LineRenderer {
             vertex_data: Vec::new(),
-            program: program,
-            state: gfx::DrawState::new(),
             vertex_buffer: vertex_buffer,
-            params: LineShaderParams {
-                model_view_proj: MAT4_ID,
-                _r: PhantomData,
-            },
+            pso_map: HashMap::new(),
+            shaders: set,
+        }
+    }
+
+    fn prepare_pso<F: gfx::Factory<R>>(&mut self, factory: &mut F, format: gfx::format::Format) -> Result<(), gfx::PipelineStateError> {
+        Ok(if let Entry::Vacant(e) = self.pso_map.entry(format) {
+            let init = pipe::Init {
+                vbuf: (),
+                u_model_view_proj: "u_model_view_proj",
+                out_color: ("o_Color", format, gfx::state::MASK_ALL, Some(gfx::preset::blend::ALPHA)),
+                out_depth: gfx::preset::depth::LESS_EQUAL_WRITE,
+            };
+            let pso = try!(factory.create_pipeline_state(
+                &self.shaders,
+                gfx::Primitive::LineList,
+                gfx::state::Rasterizer::new_fill(),
+                init
+            ));
+            e.insert(pso);
         })
     }
 
@@ -62,31 +79,34 @@ impl<R: gfx::Resources> LineRenderer<R> {
     ///
     /// Draw and clear the current batch of lines
     ///
-    pub fn render<S: gfx::Stream<R>, F: gfx::Factory<R>> (
+    pub fn render<C: gfx::CommandBuffer<R>, F: gfx::Factory<R>, T: gfx::format::RenderFormat> (
         &mut self,
-        stream: &mut S,
+        encoder: &mut gfx::Encoder<R, C>,
         factory: &mut F,
+        color_target: &RenderTargetView<R, T>,
+        depth_target: &DepthStencilView<R, gfx::format::DepthStencil>,
         projection: [[f32; 4]; 4],
-    ) -> Result<(), gfx::device::BufferUpdateError> {
+    ) -> Result<(), DebugRendererError> {
+        use gfx::Typed;
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
             self.vertex_buffer = grow_buffer(factory, &self.vertex_buffer, gfx::BufferRole::Vertex, self.vertex_data.len());
         }
 
-        try!(factory.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0));
+        try!(encoder.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0));
 
-        self.params.model_view_proj = projection;
+        try!(self.prepare_pso(factory, T::get_format()));
+        let pso = &self.pso_map[&T::get_format()];
 
-        let mesh = gfx::Mesh::from_format(
-            self.vertex_buffer.clone(),
-            self.vertex_data.len() as gfx::VertexCount
-        );
+        let data = pipe::Data {
+            vbuf: self.vertex_buffer.clone(),
+            u_model_view_proj: projection,
+            out_color: color_target.raw().clone(),
+            out_depth: depth_target.clone(),
+        };
 
-        let slice = mesh.to_slice(gfx::PrimitiveType::Line);
-
-        stream.draw(
-            &gfx::batch::bind(&self.state, &mesh, slice, &self.program, &self.params)
-        ).unwrap();
+        let slice = gfx::Slice::new_match_vertex_buffer(&self.vertex_buffer);
+        encoder.draw(&slice, pso, &data);
 
         self.vertex_data.clear();
 
@@ -143,11 +163,14 @@ b"
     }
 "];
 
-gfx_vertex!( Vertex {
-    at_position@ position: [f32; 3],
-    at_color@ color: [f32; 4],
+gfx_vertex_struct!( Vertex {
+    position: [f32; 3] = "at_position",
+    color: [f32; 4] = "at_color",
 });
 
-gfx_parameters!( LineShaderParams {
-    u_model_view_proj@ model_view_proj: [[f32; 4]; 4],
+gfx_pipeline_base!( pipe {
+    vbuf: gfx::VertexBuffer<Vertex>,
+    u_model_view_proj: gfx::Global<[[f32; 4]; 4]>,
+    out_color: gfx::RawRenderTarget,
+    out_depth: gfx::DepthTarget<gfx::format::DepthStencil>,
 });

@@ -13,19 +13,10 @@ extern crate current;
 
 use gfx_debug_draw::DebugRenderer;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use piston::window::WindowSettings;
-
-use piston::input::{
-    RenderEvent,
-    ResizeEvent,
-};
-
 use vecmath::mat4_id;
 
 use sdl2_window::Sdl2Window;
+use piston_window::*;
 
 use camera_controllers::{
     OrbitZoomCamera,
@@ -34,30 +25,24 @@ use camera_controllers::{
     model_view_projection
 };
 
-use gfx::traits::Stream;
-
 use current::{Current, CurrentGuard};
 
 fn main() {
 
     let (win_width, win_height) = (640, 480);
 
-    let window: Sdl2Window = WindowSettings::new(
-            "Debug Render Test".to_string(),
-            piston::window::Size { width: 640, height: 480 },
-        ).exit_on_esc(true)
+    let mut piston_window: PistonWindow<Sdl2Window> =
+        WindowSettings::new("Debug Render Test", (win_width, win_height))
+         .exit_on_esc(true)
          .opengl(shader_version::OpenGL::V3_2)
          .build()
          .unwrap();
-    let window = Rc::new(RefCell::new(window));
-
-    let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
     let mut debug_renderer = {
         let text_renderer = {
-            gfx_text::new(piston_window.factory.borrow().clone()).unwrap()
+            gfx_text::new(piston_window.factory.clone()).unwrap()
         };
-        DebugRenderer::new(piston_window.factory.borrow().clone(), text_renderer, 64).ok().unwrap()
+        DebugRenderer::new(piston_window.factory.clone(), text_renderer, 64).ok().unwrap()
     };
 
     let model = mat4_id();
@@ -75,7 +60,7 @@ fn main() {
 
     // Start event loop
 
-    for e in piston_window {
+    while let Some(e) = piston_window.next() {
 
         e.resize(|width, height| {
             // Update projection matrix
@@ -89,14 +74,11 @@ fn main() {
 
         orbit_zoom_camera.event(&e);
 
-        e.draw_3d(|stream| {
+        piston_window.draw_3d(&e, |window| {
             let args = e.render_args().unwrap();
 
-            stream.clear(gfx::ClearData {
-                color: [0.3, 0.3, 0.3, 1.0],
-                depth: 1.0,
-                stencil: 0,
-            });
+            window.encoder.clear(&window.output_color, [0.3, 0.3, 0.3, 1.0]);
+            window.encoder.clear_depth(&window.output_stencil, 1.0);
 
             let camera_projection = model_view_projection(
                 model,
@@ -139,7 +121,12 @@ fn main() {
                 drop(guard);
             }
 
-            if let Err(e) = debug_renderer.render(stream, camera_projection) {
+            if let Err(e) = debug_renderer.render(
+                &mut window.encoder,
+                &window.output_color,
+                &window.output_stencil,
+                camera_projection
+            ) {
                 println!("{:?}", e);
             }
         });

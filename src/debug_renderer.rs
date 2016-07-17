@@ -1,4 +1,5 @@
 use gfx;
+use gfx::handle::{DepthStencilView, RenderTargetView};
 use gfx::traits::*;
 use gfx_text;
 use vecmath::*;
@@ -12,20 +13,20 @@ type Size = f32;
 
 #[derive(Debug)]
 pub enum DebugRendererError {
-    ShaderProgramError(gfx::ProgramError),
-    BufferUpdateError(gfx::device::BufferUpdateError),
+    PipelineStateError(gfx::PipelineStateError),
+    UpdateError(gfx::UpdateError<usize>),
     GfxTextError(gfx_text::Error)
 }
 
-impl From<gfx::ProgramError> for DebugRendererError {
-    fn from(err: gfx::ProgramError) -> DebugRendererError {
-        DebugRendererError::ShaderProgramError(err)
+impl From<gfx::PipelineStateError> for DebugRendererError {
+    fn from(err: gfx::PipelineStateError) -> DebugRendererError {
+        DebugRendererError::PipelineStateError(err)
     }
 }
 
-impl From<gfx::device::BufferUpdateError> for DebugRendererError {
-    fn from(err: gfx::device::BufferUpdateError) -> DebugRendererError {
-        DebugRendererError::BufferUpdateError(err)
+impl From<gfx::UpdateError<usize>> for DebugRendererError {
+    fn from(err: gfx::UpdateError<usize>) -> DebugRendererError {
+        DebugRendererError::UpdateError(err)
     }
 }
 
@@ -50,7 +51,7 @@ impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
     ) -> Result<DebugRenderer<R, F>, DebugRendererError> {
 
         let mut factory = factory;
-        let line_renderer = try!(LineRenderer::new(&mut factory, initial_buffer_size));
+        let line_renderer = LineRenderer::new(&mut factory, initial_buffer_size);
 
         Ok(DebugRenderer {
             line_renderer: line_renderer,
@@ -95,13 +96,16 @@ impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
         self.text_renderer.add_at(text, world_position, color);
     }
 
-    pub fn render<S: gfx::Stream<R>> (
+    pub fn render<C: gfx::CommandBuffer<R>, T: gfx::format::RenderFormat>(
         &mut self,
-        stream: &mut S,
+        encoder: &mut gfx::Encoder<R, C>,
+        color_target: &RenderTargetView<R, T>,
+        depth_target: &DepthStencilView<R, gfx::format::DepthStencil>,
         projection: [[f32; 4]; 4],
     ) -> Result<(), DebugRendererError> {
-        try!(self.line_renderer.render(stream, &mut self.factory, projection));
-        try!(self.text_renderer.draw_at(stream, projection));
+        try!(self.line_renderer.render(encoder, &mut self.factory,
+            color_target, depth_target, projection));
+        try!(self.text_renderer.draw_at(encoder, color_target, projection));
         Ok(())
     }
 }
