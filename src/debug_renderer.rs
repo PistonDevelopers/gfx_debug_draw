@@ -51,7 +51,7 @@ impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
     ) -> Result<DebugRenderer<R, F>, DebugRendererError> {
 
         let mut factory = factory;
-        let line_renderer = try!(LineRenderer::new(&mut factory, initial_buffer_size));
+        let line_renderer = LineRenderer::new(&mut factory, initial_buffer_size);
 
         Ok(DebugRenderer {
             line_renderer: line_renderer,
@@ -96,10 +96,10 @@ impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
         self.text_renderer.add_at(text, world_position, color);
     }
 
-    pub fn render<C: gfx::CommandBuffer<R>>(
+    pub fn render<C: gfx::CommandBuffer<R>, T: gfx::format::RenderFormat>(
         &mut self,
         encoder: &mut gfx::Encoder<R, C>,
-        color_target: &RenderTargetView<R, gfx::format::Srgba8>,
+        color_target: &RenderTargetView<R, T>,
         depth_target: &DepthStencilView<R, gfx::format::DepthStencil>,
         projection: [[f32; 4]; 4],
     ) -> Result<(), DebugRendererError> {
