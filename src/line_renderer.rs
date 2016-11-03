@@ -169,8 +169,8 @@ gfx_vertex_struct!( Vertex {
 });
 
 gfx_pipeline_base!( pipe {
-    vbuf: gfx::VertexBuffer<Vertex>,
-    u_model_view_proj: gfx::Global<[[f32; 4]; 4]>,
-    out_color: gfx::RawRenderTarget,
-    out_depth: gfx::DepthTarget<gfx::format::DepthStencil>,
+    vbuf: ::gfx::VertexBuffer<Vertex>,
+    u_model_view_proj: ::gfx::Global<[[f32; 4]; 4]>,
+    out_color: ::gfx::RawRenderTarget,
+    out_depth: ::gfx::DepthTarget<::gfx::format::DepthStencil>,
 });
