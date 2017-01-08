@@ -39,7 +39,7 @@ impl<R: gfx::Resources> LineRenderer<R> {
 
         let set = factory.create_shader_set(&VERTEX_SRC[1], &FRAGMENT_SRC[1]).unwrap();
         let vertex_buffer = factory.create_buffer_dynamic(
-            initial_buffer_size, gfx::BufferRole::Vertex, gfx::Bind::empty()
+            initial_buffer_size, gfx::buffer::Role::Vertex, gfx::Bind::empty()
         ).expect("Could not create vertex buffer");
 
         LineRenderer {
@@ -50,7 +50,7 @@ impl<R: gfx::Resources> LineRenderer<R> {
         }
     }
 
-    fn prepare_pso<F: gfx::Factory<R>>(&mut self, factory: &mut F, format: gfx::format::Format) -> Result<(), gfx::PipelineStateError> {
+    fn prepare_pso<F: gfx::Factory<R>>(&mut self, factory: &mut F, format: gfx::format::Format) -> Result<(), gfx::PipelineStateError<String>> {
         Ok(if let Entry::Vacant(e) = self.pso_map.entry(format) {
             let init = pipe::Init {
                 vbuf: (),
@@ -87,10 +87,10 @@ impl<R: gfx::Resources> LineRenderer<R> {
         depth_target: &DepthStencilView<R, gfx::format::DepthStencil>,
         projection: [[f32; 4]; 4],
     ) -> Result<(), DebugRendererError> {
-        use gfx::Typed;
+        use gfx::memory::Typed;
 
         if self.vertex_data.len() > self.vertex_buffer.len() {
-            self.vertex_buffer = grow_buffer(factory, &self.vertex_buffer, gfx::BufferRole::Vertex, self.vertex_data.len());
+            self.vertex_buffer = grow_buffer(factory, &self.vertex_buffer, gfx::buffer::Role::Vertex, self.vertex_data.len());
         }
 
         try!(encoder.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0));
@@ -169,8 +169,8 @@ gfx_vertex_struct!( Vertex {
 });
 
 gfx_pipeline_base!( pipe {
-    vbuf: ::gfx::VertexBuffer<Vertex>,
-    u_model_view_proj: ::gfx::Global<[[f32; 4]; 4]>,
-    out_color: ::gfx::RawRenderTarget,
-    out_depth: ::gfx::DepthTarget<::gfx::format::DepthStencil>,
+    vbuf: gfx::VertexBuffer<Vertex>,
+    u_model_view_proj: gfx::Global<[[f32; 4]; 4]>,
+    out_color: gfx::RawRenderTarget,
+    out_depth: gfx::DepthTarget<::gfx::format::DepthStencil>,
 });

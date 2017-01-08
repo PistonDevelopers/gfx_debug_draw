@@ -1,15 +1,15 @@
 use gfx::{
+    buffer,
     handle,
     Bind,
     Factory,
     Resources,
-    BufferRole,
 };
 
 pub fn grow_buffer<R: Resources, F: Factory<R>, T>(
     factory: &mut F,
     buffer: &handle::Buffer<R, T>,
-    buffer_role: BufferRole,
+    buffer_role: buffer::Role,
     required_size: usize,
 ) -> handle::Buffer<R, T> {
     let mut size = buffer.len();
