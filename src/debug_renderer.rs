@@ -13,13 +13,13 @@ type Size = f32;
 
 #[derive(Debug)]
 pub enum DebugRendererError {
-    PipelineStateError(gfx::PipelineStateError),
+    PipelineStateError(gfx::PipelineStateError<String>),
     UpdateError(gfx::UpdateError<usize>),
     GfxTextError(gfx_text::Error)
 }
 
-impl From<gfx::PipelineStateError> for DebugRendererError {
-    fn from(err: gfx::PipelineStateError) -> DebugRendererError {
+impl From<gfx::PipelineStateError<String>> for DebugRendererError {
+    fn from(err: gfx::PipelineStateError<String>) -> DebugRendererError {
         DebugRendererError::PipelineStateError(err)
     }
 }
