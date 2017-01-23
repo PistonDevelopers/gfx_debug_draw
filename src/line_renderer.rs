@@ -38,8 +38,11 @@ impl<R: gfx::Resources> LineRenderer<R> {
         */
 
         let set = factory.create_shader_set(&VERTEX_SRC[1], &FRAGMENT_SRC[1]).unwrap();
-        let vertex_buffer = factory.create_buffer_dynamic(
-            initial_buffer_size, gfx::buffer::Role::Vertex, gfx::Bind::empty()
+        let vertex_buffer = factory.create_buffer(
+            initial_buffer_size,
+            gfx::buffer::Role::Vertex,
+            gfx::memory::Usage::Dynamic,
+            gfx::Bind::empty()
         ).expect("Could not create vertex buffer");
 
         LineRenderer {
