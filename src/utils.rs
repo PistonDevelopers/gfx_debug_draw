@@ -1,6 +1,7 @@
 use gfx::{
     buffer,
     handle,
+    memory,
     Bind,
     Factory,
     Resources,
@@ -16,6 +17,6 @@ pub fn grow_buffer<R: Resources, F: Factory<R>, T>(
     while size < required_size {
         size *= 2;
     }
-    factory.create_buffer_dynamic(size, buffer_role, Bind::empty())
+    factory.create_buffer(size, buffer_role, memory::Usage::Dynamic, Bind::empty())
         .expect("Could not create buffer")
 }
