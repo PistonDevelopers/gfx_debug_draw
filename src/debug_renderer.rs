@@ -6,11 +6,6 @@ use vecmath::*;
 
 use line_renderer::LineRenderer;
 
-type WorldPosition = [f32; 3];
-type ScreenPosition = [i32; 2];
-type Color = [f32; 4];
-type Size = f32;
-
 #[derive(Debug)]
 pub enum DebugRendererError {
     PipelineStateError(gfx::PipelineStateError<String>),
