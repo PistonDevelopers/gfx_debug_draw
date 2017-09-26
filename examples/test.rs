@@ -1,8 +1,5 @@
-extern crate piston;
 extern crate shader_version;
-extern crate sdl2;
 extern crate sdl2_window;
-extern crate gfx;
 extern crate gfx_text;
 extern crate camera_controllers;
 extern crate vecmath;
