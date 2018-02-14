@@ -42,7 +42,7 @@ impl<R: gfx::Resources> LineRenderer<R> {
             initial_buffer_size,
             gfx::buffer::Role::Vertex,
             gfx::memory::Usage::Dynamic,
-            gfx::Bind::empty()
+            gfx::memory::Bind::empty()
         ).expect("Could not create vertex buffer");
 
         LineRenderer {
@@ -58,7 +58,7 @@ impl<R: gfx::Resources> LineRenderer<R> {
             let init = pipe::Init {
                 vbuf: (),
                 u_model_view_proj: "u_model_view_proj",
-                out_color: ("o_Color", format, gfx::state::MASK_ALL, Some(gfx::preset::blend::ALPHA)),
+                out_color: ("o_Color", format, gfx::state::ColorMask::all(), Some(gfx::preset::blend::ALPHA)),
                 out_depth: gfx::preset::depth::LESS_EQUAL_WRITE,
             };
             let pso = try!(factory.create_pipeline_state(
