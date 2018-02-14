@@ -2,10 +2,10 @@ use gfx::{
     buffer,
     handle,
     memory,
-    Bind,
     Factory,
     Resources,
 };
+use gfx::memory::Bind;
 
 pub fn grow_buffer<R: Resources, F: Factory<R>, T>(
     factory: &mut F,
