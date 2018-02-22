@@ -1,7 +1,7 @@
 [package]
 
 name = "gfx_debug_draw"
-version = "0.20.0"
+version = "0.21.0"
 authors = ["Steve Jahns <s.t.jahns@gmail.com>"]
 keywords = ["draw", "gfx", "debug", "piston"]
 description = "Debug rendering library for gfx-rs"
@@ -18,17 +18,17 @@ path = "src/lib.rs"
 [dependencies]
 
 gfx = "0.17.0"
-gfx_text = "0.21.0"
+gfx_text = "0.22.0"
 vecmath = "0.3.0"
 
 ###### For example ###########################
 
 [dev-dependencies]
 
-piston = "0.35.0"
-piston_window = "0.76.0"
+piston = "0.36.0"
+piston_window = "0.77.0"
 sdl2 = "0.31.0"
-pistoncore-sdl2_window = "0.48.0"
+pistoncore-sdl2_window = "0.49.1"
 gfx_device_gl = "0.15.0"
 shader_version = "0.3.0"
 camera_controllers = "0.23.0"
