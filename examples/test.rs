@@ -31,7 +31,7 @@ fn main() {
     let mut piston_window: PistonWindow<Sdl2Window> =
         WindowSettings::new("Debug Render Test", (win_width, win_height))
          .exit_on_esc(true)
-         .opengl(shader_version::OpenGL::V3_2)
+         .graphics_api(shader_version::OpenGL::V3_2)
          .build()
          .unwrap();
 
