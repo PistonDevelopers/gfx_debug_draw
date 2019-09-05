@@ -59,8 +59,9 @@ fn main() {
 
     while let Some(e) = piston_window.next() {
 
-        e.resize(|width, height| {
+        e.resize(|args| {
             // Update projection matrix
+            let [width, height] = args.draw_size;
             projection = CameraPerspective {
                 fov: 90.0f32,
                 near_clip: 0.1,
