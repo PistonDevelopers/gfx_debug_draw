@@ -61,12 +61,12 @@ impl<R: gfx::Resources> LineRenderer<R> {
                 out_color: ("o_Color", format, gfx::state::ColorMask::all(), Some(gfx::preset::blend::ALPHA)),
                 out_depth: gfx::preset::depth::LESS_EQUAL_WRITE,
             };
-            let pso = try!(factory.create_pipeline_state(
+            let pso = factory.create_pipeline_state(
                 &self.shaders,
                 gfx::Primitive::LineList,
                 gfx::state::Rasterizer::new_fill(),
                 init
-            ));
+            )?;
             e.insert(pso);
         })
     }
@@ -96,9 +96,9 @@ impl<R: gfx::Resources> LineRenderer<R> {
             self.vertex_buffer = grow_buffer(factory, &self.vertex_buffer, gfx::buffer::Role::Vertex, self.vertex_data.len());
         }
 
-        try!(encoder.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0));
+        encoder.update_buffer(&self.vertex_buffer, &self.vertex_data[..], 0)?;
 
-        try!(self.prepare_pso(factory, T::get_format()));
+        self.prepare_pso(factory, T::get_format())?;
         let pso = &self.pso_map[&T::get_format()];
 
         let data = pipe::Data {
