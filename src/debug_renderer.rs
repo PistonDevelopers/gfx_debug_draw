@@ -98,9 +98,9 @@ impl<R: gfx::Resources, F: Factory<R>> DebugRenderer<R, F> {
         depth_target: &DepthStencilView<R, gfx::format::DepthStencil>,
         projection: [[f32; 4]; 4],
     ) -> Result<(), DebugRendererError> {
-        try!(self.line_renderer.render(encoder, &mut self.factory,
-            color_target, depth_target, projection));
-        try!(self.text_renderer.draw_at(encoder, color_target, projection));
+        self.line_renderer.render(encoder, &mut self.factory,
+            color_target, depth_target, projection)?;
+        self.text_renderer.draw_at(encoder, color_target, projection)?;
         Ok(())
     }
 }
